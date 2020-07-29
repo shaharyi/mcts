@@ -13,11 +13,35 @@
         width: 2em;
     }
     td {
-        padding: 20px 10px 0px 10px;
+    /*
+        padding: 20px 10px 0px 10px; */
         border: 1px solid black;
      /* border-spacing: 15px 15px;*/
     }
-
+table.desig {
+    border: 2px solid blue;
+}
+table.not_desig {
+    border: 1px solid black;
+}
+table.win1 {
+    background-color:yellow;
+}
+table.win2 {
+    background-color:green;
+}
+.tickbox {
+        vertical-align:center;
+        text-align: center;
+        margin: auto;
+        padding: 5px 0;
+    border: 1px solid black;
+    /* cursor: pointer; */
+    width: 1.5em;
+    height: 1em;
+    line-height:1em;
+    font-size: x-large;
+}
 </style>
 {% endblock %}
 
@@ -26,22 +50,25 @@
     {{ form.hidden_tag() }}
     {{ wtf.form_errors(form, hiddens="only") }}
     <input type="hidden" name="pressed" id="pressed"/>
-    <table style='width:60%; font-family:"Courier New", Courier, monospace'>
+    {% set main_table_class = 'desig' if desig_board==None else 'not_desig' %}
+    <table class="{{main_table_class}}" style='width:40%'>
         {% for r in range(N) %}
         <tr>
             {% for c in range(N) %}
             <td>
-                <table style="border: 1px solid black;">
+                {% set table_class = 'desig' if (r,c)==desig_board and mainboard[r,c]==0 else 'not_desig' %}
+                {% set table_class = ('win1', table_class, 'win2')[mainboard[r,c]+1] %}
+                <table class="{{table_class}}">
                     {% for x in range(N) %}
                     <tr>
                         {% for y in range(N) %}
                         {% set bi=(r*N+c)*N**2 + (x*N+y) %}
                         {% set bv = board[r,c,x,y] %}
-                        {% set button = form.buttons[bi] %}
-                        {% set label = 'O X'[bv+1] %}
-                        {% set enabled = (r,c,x,y) is in(legal_moves) and not game_over %}
-                        {% set kw = {} if enabled else {'disabled':'true'} %}
-                        <td>{{ button(type='button', value='O X'[bv+1], id=bi, **kw) }}</td>
+                        {% set label = 'X O'[bv+1] %}
+                        {% set enabled = 'enabled' if (r,c,x,y) is in(legal_moves) and not game_over  else '' %}
+                        <td>
+                            <div class="tickbox {{enabled}}" id="{{bi}}" >{{label}}</div>
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
@@ -57,9 +84,10 @@
 {% block scripts %}
 {{ super() }}
 <script>
-$(":button").click(function(event) {
+$("div.enabled").click(function(event) {
     $("#pressed").val(event.target.id);
     $(".form").submit();
 });
+
 </script>
 {% endblock %}

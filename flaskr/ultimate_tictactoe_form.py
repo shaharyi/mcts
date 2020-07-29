@@ -5,4 +5,4 @@ N = 3
 
 
 class UltimateTictactoeForm(FlaskForm):
-    buttons = FieldList(SubmitField(''), min_entries=N**4)
+    submit= SubmitField('')

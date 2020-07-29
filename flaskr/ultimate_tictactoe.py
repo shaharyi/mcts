@@ -32,7 +32,8 @@ def game_restart():
     legal_moves = state.get_legal_actions(as_coords=True)
     mainboard = state.main_board()
     return render_template('ultimate_tictactoe.html', form=form, N=N,
-                           game_over=False, board=state.board, legal_moves=legal_moves, mainboard=mainboard)
+                           game_over=False, board=state.board, desig_board=None,
+                           legal_moves=legal_moves, mainboard=mainboard)
 
 
 @bp.route('/ultimate_tictactoe', methods=['POST'])
@@ -52,11 +53,15 @@ def game():
                 action = best_node.action
                 state = state.move(action)
 
-    game_over = False
-    if state.is_game_over():
+    game_over = state.is_game_over()
+    if game_over:
         flash(('X wins!', 'Draw!', 'O wins!')[state.game_result + 1])
-        game_over = True
 
     legal_moves = state.get_legal_actions(as_coords=True)
+    mainboard = state.main_board()
+    desig_board = state.last_move and state.last_move.pos[2:] or None
+    if desig_board and mainboard[desig_board] != 0:
+        desig_board = None
     return render_template('ultimate_tictactoe.html', form=form, N=N,
-                           game_over=game_over, board=state.board, legal_moves=legal_moves)
+                           game_over=game_over, board=state.board, desig_board=desig_board,
+                           legal_moves=legal_moves, mainboard=mainboard)
