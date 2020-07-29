@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block header %}
+<h1>{% block title %}Ultimate Tic-Tac-Toe{% endblock %}</h1>
+<style>
+    input {
+        font-family: "Courier New", Courier, monospace;
+        font-weight: bold;
+        font-size: large;
+        vertical-align:center;
+        padding: 0px 0px;
+        width: 2em;
+    }
+    td {
+        padding: 20px 10px 0px 10px;
+        border: 1px solid black;
+     /* border-spacing: 15px 15px;*/
+    }
+
+</style>
+{% endblock %}
+
+{% block app_content %}
+<form class="form form-basic" method="post" role="form">
+    {{ form.hidden_tag() }}
+    {{ wtf.form_errors(form, hiddens="only") }}
+    <input type="hidden" name="pressed" id="pressed"/>
+    <table style='width:60%; font-family:"Courier New", Courier, monospace'>
+        {% for r in range(N) %}
+        <tr>
+            {% for c in range(N) %}
+            <td>
+                <table style="border: 1px solid black;">
+                    {% for x in range(N) %}
+                    <tr>
+                        {% for y in range(N) %}
+                        {% set bi=(r*N+c)*N**2 + (x*N+y) %}
+                        {% set bv = board[r,c,x,y] %}
+                        {% set button = form.buttons[bi] %}
+                        {% set label = 'O X'[bv+1] %}
+                        {% set enabled = (r,c,x,y) is in(legal_moves) and not game_over %}
+                        {% set kw = {} if enabled else {'disabled':'true'} %}
+                        <td>{{ button(type='button', value='O X'[bv+1], id=bi, **kw) }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    </td>
+                </table>
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script>
+$(":button").click(function(event) {
+    $("#pressed").val(event.target.id);
+    $(".form").submit();
+});
+</script>
+{% endblock %}

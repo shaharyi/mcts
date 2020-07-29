@@ -60,8 +60,11 @@ class UltimateTicTacToeGameState(TwoPlayersAbstractGameState):
             if winner[i]:
                 return player
 
-        not_won_yet = self.board[mainboard.nonzero()]
-        if np.all(not_won_yet != 0):
+        main_not_won = np.nonzero(mainboard == 0)
+        if np.size(main_not_won) == 0:
+            return 0
+        not_won_yet = self.board[main_not_won]
+        if not_won_yet.size > 0 and np.all(not_won_yet != 0):
             return 0
 
         # if not over - no result
@@ -94,16 +97,19 @@ class UltimateTicTacToeGameState(TwoPlayersAbstractGameState):
 
         return UltimateTicTacToeGameState(new_board, move, next_to_move)
 
-    def get_legal_actions(self):
+    def get_legal_actions(self, as_coords=False):
         player = self.next_to_move
         last = self.last_move and self.last_move.pos[2:]  # next row, col
         mainboard = self.main_board()
         ignore_last = not last or mainboard[last] != 0 or np.all(self.board[last] != 0)
         n = self.board_size
         moves = []
+        moves_coord = []
         for r in range(n):
             for c in range(n):
                 if mainboard[r, c] == 0 and ((r, c) == last or ignore_last):
                     nonz_coord = np.argwhere(self.board[r, c] == 0)
-                    moves += [UltimateTicTacToeMove((r, c, *pos), self.next_to_move) for pos in nonz_coord]
-        return moves
+                    moves_coord += [(r, c, *pos) for pos in nonz_coord]
+                    moves += [UltimateTicTacToeMove((r, c, *pos), self.next_to_move)
+                              for pos in nonz_coord]
+        return as_coords and moves_coord or moves
