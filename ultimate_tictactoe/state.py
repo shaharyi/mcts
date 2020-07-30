@@ -1,5 +1,5 @@
 import numpy as np
-from mctspy.games.common import TwoPlayersAbstractGameState, AbstractGameAction
+from common.common import TwoPlayersAbstractGameState, AbstractGameAction
 
 
 class UltimateTicTacToeMove(AbstractGameAction):
