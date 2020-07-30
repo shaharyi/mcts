@@ -2,14 +2,14 @@ from pdb import set_trace
 import numpy as np
 
 from flaskr.ultimate_tictactoe_form import UltimateTictactoeForm
-from mctspy.tree.nodes import TwoPlayersGameMonteCarloTreeSearchNode
-from mctspy.tree.search import MonteCarloTreeSearch
+from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
+from common.search import MonteCarloTreeSearch
 from ultimate_tictactoe.state import UltimateTicTacToeMove, UltimateTicTacToeGameState
 
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 
 N = 3
-NUM_ROLLOUTS = 10
+NUM_ROLLOUTS = 100
 
 bp = Blueprint('ultimate_tictactoe', __name__, url_prefix='/ultimate_tictactoe')
 state = None

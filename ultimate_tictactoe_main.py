@@ -1,8 +1,5 @@
-import numpy as np
-
-from mctspy.tree.nodes import TwoPlayersGameMonteCarloTreeSearchNode
-from mctspy.tree.search import MonteCarloTreeSearch
-from mctspy.games.examples.tictactoe import TicTacToeGameState, TicTacToeMove
+from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
+from common.search import MonteCarloTreeSearch
 from ultimate_tictactoe.state import *
 
 board = np.zeros((3, 3, 3, 3), int)
