@@ -2,9 +2,9 @@ from pdb import set_trace
 import numpy as np
 
 from flaskr.tictactoe_form import TictactoeForm
-from mctspy.tree.nodes import TwoPlayersGameMonteCarloTreeSearchNode
-from mctspy.tree.search import MonteCarloTreeSearch
-from mctspy.games.examples.tictactoe import TicTacToeGameState, TicTacToeMove
+from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
+from common.search import MonteCarloTreeSearch
+from tictactoe.tictactoe import TicTacToeGameState, TicTacToeMove
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
