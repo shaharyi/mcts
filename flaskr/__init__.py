@@ -4,6 +4,13 @@ from flask import Flask
 from flask import render_template
 
 from flask_bootstrap import Bootstrap
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+
+# Limit request rate per route. Gives client HTTP 429 when exceeded.
+limiter = Limiter(key_func=get_remote_address,
+                  default_limits=["200 per day", "50 per hour"])
 
 
 def create_app(test_config=None):

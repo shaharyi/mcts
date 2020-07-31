@@ -8,6 +8,8 @@ from ultimate_tictactoe.state import UltimateTicTacToeMove, UltimateTicTacToeGam
 
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 
+from . import limiter    # flask limiter. Limits request rate
+
 N = 3
 NUM_ROLLOUTS = 100
 
@@ -23,6 +25,7 @@ def pos(i):
     return r, c, x, y
 
 
+@limiter.limit('10/hour; 100/day')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 def game_restart():
     global state, N
@@ -38,6 +41,8 @@ def game_restart():
                            legal_moves=legal_moves, mainboard=mainboard)
 
 
+@limiter.limit('30/hour; 8000/day')
+@bp.route('/ultimate_tictactoe', methods=['GET'])
 @bp.route('/ultimate_tictactoe', methods=['POST'])
 def game():
     global state, N
