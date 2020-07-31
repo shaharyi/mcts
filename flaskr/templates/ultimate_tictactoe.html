@@ -89,10 +89,11 @@ table.win2 {
 {{ super() }}
 <script>
 $("div.enabled").click(function(event) {
+    document.body.style.cursor = 'wait';
     $("#pressed").val(event.target.id);
     $(".form").submit();
 });
 
-
+/* document.body.style.cursor = 'default';  */
 </script>
 {% endblock %}
