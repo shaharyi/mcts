@@ -13,8 +13,10 @@ from . import limiter    # flask limiter. Limits request rate
 N = 3
 NUM_ROLLOUTS = 100
 
+states = {}
+session_id = 1
+
 bp = Blueprint('ultimate_tictactoe', __name__, url_prefix='/ultimate_tictactoe')
-state = None
 
 
 def pos(i):
@@ -28,9 +30,11 @@ def pos(i):
 @limiter.limit('10/hour; 100/day')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 def game_restart():
-    global state, N
+    global N, states, session_id
     board = np.zeros((N, N, N, N), int)
-    state = UltimateTicTacToeGameState(board=board, next_to_move=1)
+    session['id'] = session_id
+    state = states[session_id] = UltimateTicTacToeGameState(board=board, next_to_move=1)
+    session_id += 1
     form = UltimateTictactoeForm()
     legal_moves = state.get_legal_actions(as_coords=True)
     mainboard = state.main_board()
@@ -45,7 +49,10 @@ def game_restart():
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 @bp.route('/ultimate_tictactoe', methods=['POST'])
 def game():
-    global state, N
+    global N
+    state = states.get(session['id'])
+    if state is None:
+        return redirect(url_for('hello'))
     form = UltimateTictactoeForm()
     if form.validate_on_submit():
         print(state.main_board())
@@ -71,6 +78,9 @@ def game():
     if desig_board and mainboard[desig_board] != 0:
         desig_board = None
     print(mainboard)
+    states[session['id']] = state
+    if game_over:
+        states.pop(session['id'])
     return render_template('ultimate_tictactoe.html', form=form, N=N,
                            game_over=game_over, board=state.board,
                            desig_board=desig_board, last_move=state.last_move,
