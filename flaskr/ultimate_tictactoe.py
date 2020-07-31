@@ -32,6 +32,7 @@ def pos(i):
 def game_restart():
     global N, states, session_id
     board = np.zeros((N, N, N, N), int)
+    session.pop('id', None)  # in case a current game exists for this user
     session['id'] = session_id
     state = states[session_id] = UltimateTicTacToeGameState(board=board, next_to_move=1)
     session_id += 1
