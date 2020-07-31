@@ -27,12 +27,14 @@ def pos(i):
     return r, c, x, y
 
 
-@limiter.limit('10/hour; 100/day')
+@limiter.limit('10/minute; 60/hour; 100/day; 1000/month')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 def game_restart():
     global N, states, session_id
     board = np.zeros((N, N, N, N), int)
-    session.pop('id', None)  # in case a current game exists for this user
+    old_id = session.pop('id', None)  # in case a current game exists for this user
+    if old_id:
+        states.pop(old_id, None)
     session['id'] = session_id
     state = states[session_id] = UltimateTicTacToeGameState(board=board, next_to_move=1)
     session_id += 1
@@ -46,7 +48,7 @@ def game_restart():
                            legal_moves=legal_moves, mainboard=mainboard)
 
 
-@limiter.limit('30/hour; 8000/day')
+@limiter.limit('60/minute; 3000/hour; 8000/day; 40000/month')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 @bp.route('/ultimate_tictactoe', methods=['POST'])
 def game():
