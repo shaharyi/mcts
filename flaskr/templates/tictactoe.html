@@ -2,21 +2,32 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block header %}
-<h1>{% block title %}Tic-Tac-Toe{% endblock %}</h1>
+<style>
+    input {
+        /* font-family: "Courier New", Courier, monospace; */
+        font-weight: bold;
+        font-size: x-large;
+        vertical-align:center;
+        padding: 0px 0px;
+        width: 2em;
+    }
+
+</style>
 {% endblock %}
 
 {% block app_content %}
+<h1>{% block title %}Tic-Tac-Toe{% endblock %}</h1>
 <form class="form form-basic" method="post" role="form">
     {{ form.hidden_tag() }}
     {{ wtf.form_errors(form, hiddens="only") }}
-    <input type="hidden" name="pressed" id="pressed" />
+    <input type="hidden" name="pressed" id="pressed"/>
     <table style="width:20%">
         <tr>
             {% for button in form.buttons %}
             {% if button.label.text in ('o', 'x') or game_over %}
-                <td>{{ button(type='button', class="button_disabled", id=loop.index) }}</td>
+            <td>{{ button(type='button', class="button_disabled", id=loop.index) }}</td>
             {% else %}
-                <td>{{ button(type='button', class="button", id=loop.index) }}</td>
+            <td>{{ button(type='button', class="button", id=loop.index) }}</td>
             {% endif %}
             {% if loop.index is divisibleby(N) %}
         </tr>
@@ -33,5 +44,6 @@ $(".button").click(function(event) {
     $("#pressed").val(event.target.id);
     $(".form").submit();
 });
+
 </script>
 {% endblock %}

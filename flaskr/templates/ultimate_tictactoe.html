@@ -2,21 +2,9 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block header %}
-<h1>{% block title %}Ultimate Tic-Tac-Toe{% endblock %}</h1>
 <style>
-    input {
-        font-family: "Courier New", Courier, monospace;
-        font-weight: bold;
-        font-size: large;
-        vertical-align:center;
-        padding: 0px 0px;
-        width: 2em;
-    }
     td {
-    /*
-        padding: 20px 10px 0px 10px; */
         border: 1px solid black;
-     /* border-spacing: 15px 15px;*/
     }
 table.desig {
     border: 2px solid blue;
@@ -48,6 +36,8 @@ table.win2 {
 {% endblock %}
 
 {% block app_content %}
+<h1>{% block title %}Ultimate Tic-Tac-Toe{% endblock %}</h1>
+
 <form class="form form-basic" method="post" role="form">
     {{ form.hidden_tag() }}
     {{ wtf.form_errors(form, hiddens="only") }}

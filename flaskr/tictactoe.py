@@ -22,7 +22,7 @@ def game_restart():
     state = TicTacToeGameState(state=board, next_to_move=-1)
     form = TictactoeForm()
     for i in range(N ** 2):
-        form.buttons.entries[i].label.text = 'x-o'[state.board[i // 3, i % 3] + 1]
+        form.buttons.entries[i].label.text = 'X O'[state.board[i // 3, i % 3] + 1]
     return render_template('tictactoe.html', form=form, N=N)
 
 
@@ -51,5 +51,5 @@ def game():
         game_over = True
 
     for i in range(N ** 2):
-        form.buttons.entries[i].label.text = 'x-o'[state.board[i // 3, i % 3] + 1]
+        form.buttons.entries[i].label.text = 'X O'[state.board[i // 3, i % 3] + 1]
     return render_template('tictactoe.html', form=form, N=N, game_over=game_over)
