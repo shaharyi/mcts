@@ -11,7 +11,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, sessi
 from . import limiter    # flask limiter. Limits request rate
 
 N = 3
-NUM_ROLLOUTS = 10
+NUM_ROLLOUTS = 100
 
 states = {}
 session_id = 1
