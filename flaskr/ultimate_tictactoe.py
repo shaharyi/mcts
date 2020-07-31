@@ -72,6 +72,8 @@ def game():
     game_over = state.is_game_over()
     states[session['id']] = state
     mainboard = state.main_board()
+    print('session_id=%d' % session['id'])
+    print(mainboard)
     if game_over:
         flash(('O wins!', 'Draw!', 'X wins!')[state.game_result + 1])
         states.pop(session['id'])
@@ -82,8 +84,6 @@ def game():
         desig_board = state.last_move and state.last_move.pos[2:] or None
         if desig_board and mainboard[desig_board] != 0:
             desig_board = None
-    print(state.board)
-    print(mainboard)
     return render_template('ultimate_tictactoe.html', form=form, N=N,
                            game_over=game_over, board=state.board,
                            desig_board=desig_board, last_move=state.last_move,
