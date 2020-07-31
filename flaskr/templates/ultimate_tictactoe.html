@@ -19,7 +19,7 @@
      /* border-spacing: 15px 15px;*/
     }
 table.desig {
-    border: 1px solid blue;
+    border: 2px solid blue;
     background-color: PaleTurquoise;
 }
 table.not_desig {
@@ -53,7 +53,7 @@ table.win2 {
     {{ wtf.form_errors(form, hiddens="only") }}
     <input type="hidden" name="pressed" id="pressed"/>
     <div style="margin:auto;">
-        {% set main_table_class = 'desig' if desig_board==None else 'not_desig' %}
+        {% set main_table_class = 'desig' if desig_board==None and not game_over else 'not_desig' %}
         <table class="{{main_table_class}}" >
             {% for r in range(N) %}
             <tr>
@@ -68,7 +68,7 @@ table.win2 {
                             {% set bi=(r*N+c)*N**2 + (x*N+y) %}
                             {% set bv = board[r,c,x,y] %}
                             {% set label = 'O X'[bv+1] %}
-                            {% set enabled = 'enabled' if (r,c,x,y) is in(legal_moves) and not game_over else '' %}
+                            {% set enabled = 'enabled' if not game_over and (r,c,x,y) is in(legal_moves) else '' %}
                             <td>
                                 <div class="tickbox {{enabled}}" id="{{bi}}">{{label}}</div>
                             </td>

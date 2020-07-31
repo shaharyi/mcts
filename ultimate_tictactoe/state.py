@@ -24,10 +24,11 @@ class UltimateTicTacToeGameState(TwoPlayersAbstractGameState):
         self.next_to_move = next_to_move
 
     def main_board(self):
-        xsum = np.sum(self.board, 3)
-        ysum = np.sum(self.board, 2)
-        tl = self.board.trace(axis1=2, axis2=3)
-        tr = self.board[::, ::, ::, ::-1].trace()
+        b = self.board
+        xsum = np.sum(b, 3)
+        ysum = np.sum(b, 2)
+        tl = b.trace(axis1=2, axis2=3)
+        tr = b[::, ::, ::, ::-1].trace(axis1=2, axis2=3)
 
         n = self.board_size
         # zip the sums, each vector-couple represents a board

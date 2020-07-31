@@ -11,7 +11,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, sessi
 from . import limiter    # flask limiter. Limits request rate
 
 N = 3
-NUM_ROLLOUTS = 100
+NUM_ROLLOUTS = 10
 
 states = {}
 session_id = 1
@@ -69,18 +69,20 @@ def game():
                 state = state.move(action)
 
     game_over = state.is_game_over()
+    states[session['id']] = state
+    mainboard = state.main_board()
     if game_over:
         flash(('O wins!', 'Draw!', 'X wins!')[state.game_result + 1])
-
-    legal_moves = state.get_legal_actions(as_coords=True)
-    mainboard = state.main_board()
-    desig_board = state.last_move and state.last_move.pos[2:] or None
-    if desig_board and mainboard[desig_board] != 0:
-        desig_board = None
-    print(mainboard)
-    states[session['id']] = state
-    if game_over:
         states.pop(session['id'])
+        legal_moves = []
+        desig_board = None
+    else:
+        legal_moves = state.get_legal_actions(as_coords=True)
+        desig_board = state.last_move and state.last_move.pos[2:] or None
+        if desig_board and mainboard[desig_board] != 0:
+            desig_board = None
+    print(state.board)
+    print(mainboard)
     return render_template('ultimate_tictactoe.html', form=form, N=N,
                            game_over=game_over, board=state.board,
                            desig_board=desig_board, last_move=state.last_move,
