@@ -5,7 +5,7 @@ import numpy as np
 from flaskr.tictactoe_form import TictactoeForm
 from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
 from common.search import MonteCarloTreeSearch
-from common.common import save_object_binary, load_object_binary
+from common.common import save_object_binary, load_object_binary, save_in_thread
 from tictactoe.tictactoe import TicTacToeGameState, TicTacToeMove
 
 from flask import (
@@ -69,7 +69,7 @@ def game():
     if state.is_game_over():
         flash(('X wins!', 'Draw!', 'O wins!')[state.game_result + 1])
         game_over = True
-        save_object_binary(TREE_ABS_FILEPATH, root)
+        save_in_thread(TREE_ABS_FILEPATH, root)
 
     for i in range(N ** 2):
         form.buttons.entries[i].label.text = 'X O'[state.board[i // 3, i % 3] + 1]
