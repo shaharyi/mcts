@@ -1,21 +1,25 @@
 from pdb import set_trace
 import numpy as np
+import os.path
 
 from flaskr.ultimate_tictactoe_form import UltimateTictactoeForm
 from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
 from common.search import MonteCarloTreeSearch
-from common.common import save_in_thread, load_object
+from common.common import save_in_thread, load_object_binary, save_object_binary
 from ultimate_tictactoe.state import UltimateTicTacToeMove, UltimateTicTacToeGameState
 
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 
-from . import limiter    # flask limiter. Limits request rate
+from . import limiter  # flask limiter. Limits request rate
 
 N = 3
 NUM_ROLLOUTS = 100
 TREE_FILENAME = 'ut_tree'
-TREE_WEB_FILEPATH = '../../static/data/' + TREE_FILENAME
-TREE_LOCAL_FILEPATH = 'flaskr/static/data/' + TREE_FILENAME
+
+WORKING_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(WORKING_DIR, 'static/data')
+TREE_ABS_FILEPATH = os.path.join(DATA_DIR, TREE_FILENAME)
+TREE_REL_FILEPATH = '../../static/data/' + TREE_FILENAME
 
 current_nodes = {}
 session_id = 1
@@ -34,14 +38,14 @@ def pos(i):
 
 @bp.route('/ultimate_tictactoe/tree_view', methods=['GET'])
 def tree_view():
-    return render_template('tree_view.html', filepath='../../' + TREE_WEB_FILEPATH + '.d3.json')
+    return render_template('tree_view.html', filepath=TREE_REL_FILEPATH + '.d3.json')
 
 
 @limiter.limit('10/minute; 60/hour; 100/day; 1000/month')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 def game_restart():
     global N, current_nodes, session_id, root
-    root = load_object(TREE_LOCAL_FILEPATH)
+    root = load_object_binary(TREE_ABS_FILEPATH)
     if not root:
         board = np.zeros((N, N, N, N), int)
         state = UltimateTicTacToeGameState(board=board, next_to_move=1)
@@ -95,7 +99,8 @@ def game():
     print(mainboard)
     if game_over:
         flash(('O wins!', 'Draw!', 'X wins!')[state.game_result + 1])
-        save_in_thread(TREE_LOCAL_FILEPATH, root)
+        # save_in_thread(TREE_FILEPATH, root)  # takes hundreds of MB
+        save_object_binary(TREE_ABS_FILEPATH, root)
         current_nodes.pop(session['id'])
         legal_moves = []
         desig_board = None

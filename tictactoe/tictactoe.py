@@ -13,6 +13,7 @@ class TicTacToeMove(AbstractGameAction):
         s = '%d, %d, %d' % ( self.x_coordinate, self.y_coordinate, self.value)
         return s
 
+
 class TicTacToeGameState(TwoPlayersAbstractGameState):
 
     x = 1

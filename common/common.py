@@ -12,18 +12,22 @@ def save_in_thread(filepath, obj):
 
 def save_object_in_app(app, filepath, obj):
     with app.app_context():
-        save_object(filepath, obj)
+        save_object_binary(filepath, obj)
+        save_object_text(filepath, obj)
 
 
-def save_object(filepath, obj):
+def save_object_binary(filepath, obj):
     with open(filepath + '.pkl', 'wb') as output:
         pickle.dump(obj, output, -1)  # -1 is for highest protocol
+
+
+def save_object_text(filepath, obj):
     with open(filepath + '.d3.json', 'w') as output:
         s = preorder_json(obj, 0)
         output.write(s)
 
 
-def load_object(filepath):
+def load_object_binary(filepath):
     try:
         with open(filepath + '.pkl', 'rb') as input:
             obj = pickle.load(input)
@@ -37,7 +41,8 @@ def preorder_json(node, level):
     indent = level * 2 * ' '
     s = indent + '{\n'
     indent += 2 * ' '
-    s += indent + '"name": "' + (node and str(node.action) or (node.parent and 'None' or 'Root')) + '"'
+    name = node and str(node.action) or 'None'
+    s += indent + '"name": "' + (node.parent and name or 'Root') + '"'
     if node.parent:
         s += ',\n'
         value = str(node.q) + ', ' + str(node.n)
