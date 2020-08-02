@@ -102,6 +102,22 @@ class TwoPlayersGameMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
         self.children.append(child_node)
         return child_node
 
+    def expand_action(self, action):
+        self.untried_actions.remove(action)
+        next_state = self.state.move(action)
+        child_node = TwoPlayersGameMonteCarloTreeSearchNode(
+            next_state, parent=self, action=action)
+        self.children.append(child_node)
+        return child_node
+
+    def get_child(self, action):
+        if action in self.untried_actions:
+            self.expand_action(action)
+        for c in self.children:
+            if action == c.action:
+                return c
+        return None
+
     def is_terminal_node(self):
         return self.state.is_game_over()
 

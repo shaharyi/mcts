@@ -1,20 +1,17 @@
+from dataclasses import dataclass
 import numpy as np
 from common.common import TwoPlayersAbstractGameState, AbstractGameAction
 
 
+@dataclass
 class TicTacToeMove(AbstractGameAction):
-    def __init__(self, x_coordinate, y_coordinate, value):
-        self.x_coordinate = x_coordinate
-        self.y_coordinate = y_coordinate
-        self.value = value
+    x_coordinate: int
+    y_coordinate: int
+    value: int
 
-    def __repr__(self):
-        return "x:{0} y:{1} v:{2}".format(
-            self.x_coordinate,
-            self.y_coordinate,
-            self.value
-        )
-
+    def __str__(self):
+        s = '%d, %d, %d' % ( self.x_coordinate, self.y_coordinate, self.value)
+        return s
 
 class TicTacToeGameState(TwoPlayersAbstractGameState):
 

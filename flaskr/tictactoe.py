@@ -4,6 +4,7 @@ import numpy as np
 from flaskr.tictactoe_form import TictactoeForm
 from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
 from common.search import MonteCarloTreeSearch
+from common.common import save_object, load_object
 from tictactoe.tictactoe import TicTacToeGameState, TicTacToeMove
 
 from flask import (
@@ -13,13 +14,29 @@ from flask import (
 bp = Blueprint('tictactoe', __name__, url_prefix='/tictactoe')
 N = 3
 state = None
+root = None
+current_node = None
+TREE_FILENAME = 'ttt_tree'
+TREE_WEB_FILEPATH = '../../static/data/' + TREE_FILENAME
+TREE_LOCAL_FILEPATH = 'flaskr/static/data/' + TREE_FILENAME
+
+
+@bp.route('/tictactoe/tree_view', methods=['GET'])
+def tree_view():
+    return render_template('tree_view.html', filepath='../../' + TREE_WEB_FILEPATH + '.d3.json')
 
 
 @bp.route('/tictactoe', methods=['GET'])
 def game_restart():
-    global state, N
-    board = np.zeros((N, N), int)
-    state = TicTacToeGameState(state=board, next_to_move=-1)
+    global state, N, root, current_node
+    root = load_object(TREE_LOCAL_FILEPATH)
+    if root:
+        state = root.state
+    else:
+        board = np.zeros((N, N), int)
+        state = TicTacToeGameState(state=board, next_to_move=-1)
+        root = TwoPlayersGameMonteCarloTreeSearchNode(state=state)
+    current_node = root
     form = TictactoeForm()
     for i in range(N ** 2):
         form.buttons.entries[i].label.text = 'X O'[state.board[i // 3, i % 3] + 1]
@@ -28,7 +45,7 @@ def game_restart():
 
 @bp.route('/tictactoe', methods=['POST'])
 def game():
-    global state, N
+    global N, root, state, current_node
     form = TictactoeForm()
     if form.validate_on_submit():
         if not state.is_game_over() and state.next_to_move == -1:
@@ -37,18 +54,19 @@ def game():
             r = m // 3
             c = m % 3
             action = TicTacToeMove(r, c, -1)
-            state = state.move(action)
+            current_node = current_node.get_child(action)
+            state = current_node.state
             if not state.is_game_over():
-                root = TwoPlayersGameMonteCarloTreeSearchNode(state=state)
-                mcts = MonteCarloTreeSearch(root)
+                mcts = MonteCarloTreeSearch(current_node)
                 best_node = mcts.best_action(1000)
-                action = best_node.action
-                state = state.move(action)
+                state = best_node.state
+                current_node = best_node
 
     game_over = False
     if state.is_game_over():
         flash(('X wins!', 'Draw!', 'O wins!')[state.game_result + 1])
         game_over = True
+        save_object(TREE_LOCAL_FILEPATH, root)
 
     for i in range(N ** 2):
         form.buttons.entries[i].label.text = 'X O'[state.board[i // 3, i % 3] + 1]

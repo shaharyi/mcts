@@ -1,8 +1,13 @@
 import numpy as np
 from common.common import TwoPlayersAbstractGameState, AbstractGameAction
+from dataclasses import dataclass
 
 
+@dataclass
 class UltimateTicTacToeMove(AbstractGameAction):
+    pos: tuple
+    value: int
+
     def __init__(self, pos, value):
         self.pos = tuple(pos)
         self.value = value
