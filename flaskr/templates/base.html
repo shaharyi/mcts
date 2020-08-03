@@ -1,26 +1,30 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - Flaskr</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<header>
+    <title>{% block title %}{% endblock %} - Flaskr</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block header %}
+    {% endblock %}
+</header>
+
 <nav>
-  <h1>Games</h1>
-  <ul>
-      <li><a href="{{ url_for('tictactoe.game_restart') }}">Tic-Tac-Toe</a>
-      <li><a href="{{ url_for('tictactoe.tree_view') }}">Tic-Tac-Toe Tree View</a>
-      <li><a href="{{ url_for('ultimate_tictactoe.game_restart') }}">Ultimate Tic-Tac-Toe</a>
-      <li><a href="{{ url_for('ultimate_tictactoe.tree_view') }}">Ultimate Tree View</a>
-  </ul>
+    <h1>Games</h1>
+    <ul>
+        <li><a href="{{ url_for('tictactoe.game_restart') }}">Tic-Tac-Toe</a>
+        <li><a href="{{ url_for('tictactoe.tree_view') }}">Tic-Tac-Toe Tree View</a>
+        <li><a href="{{ url_for('ultimate_tictactoe.game_restart') }}">Ultimate Tic-Tac-Toe</a>
+        <li><a href="{{ url_for('ultimate_tictactoe.tree_view') }}">Ultimate Tree View</a>
+    </ul>
 </nav>
+<body>
 <section class="content">
-  <header>
-    {% block header %}{% endblock %}
-  </header>
-  {% block content %}
-  {% for message in get_flashed_messages() %}
+    {% block content %}
+    {% for message in get_flashed_messages() %}
     <div class="flash">{{ message }}</div>
-  {% endfor %}
+    {% endfor %}
     {% block app_content %}{% endblock %}
-  {% endblock %}
+    {% endblock %}
 </section>
+</body>
 
 {% block scripts %}
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>

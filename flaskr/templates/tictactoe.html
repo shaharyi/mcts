@@ -6,12 +6,14 @@
     input {
         /* font-family: "Courier New", Courier, monospace; */
         font-weight: bold;
-        font-size: xx-large;
-        vertical-align:center;
-        line-height:2em;
-        padding: 0px 0px;
+        font-size: min(8vw, 8vh);
         width: 2em;
         height: 2em;
+        line-height:1em;
+        vertical-align:center;
+    }
+    table {
+        margin: auto;
     }
 </style>
 {% endblock %}
@@ -22,7 +24,7 @@
     {{ form.hidden_tag() }}
     {{ wtf.form_errors(form, hiddens="only") }}
     <input type="hidden" name="pressed" id="pressed"/>
-    <table style="width:20%">
+    <table>
         <tr>
             {% for button in form.buttons %}
             {% if button.label.text in ('o', 'x') or game_over %}
@@ -45,6 +47,7 @@ $(".button").click(function(event) {
     $("#pressed").val(event.target.id);
     $(".form").submit();
 });
+
 
 </script>
 {% endblock %}
