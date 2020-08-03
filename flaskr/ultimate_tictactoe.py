@@ -1,4 +1,5 @@
 from pdb import set_trace
+from threading import Lock
 import numpy as np
 import os.path
 
@@ -21,9 +22,10 @@ DATA_DIR = os.path.join(WORKING_DIR, 'static/data')
 TREE_ABS_FILEPATH = os.path.join(DATA_DIR, TREE_FILENAME)
 TREE_REL_FILEPATH = '../../static/data/' + TREE_FILENAME
 
-current_nodes = {}
-session_id = 1
-root = None
+if not ('current_nodes' in vars() or 'current_nodes' in globals()):
+    current_nodes = {}
+    session_id = 1
+    root = None
 
 bp = Blueprint('ultimate_tictactoe', __name__, url_prefix='/ultimate_tictactoe')
 
@@ -69,7 +71,7 @@ def game_restart():
                            legal_moves=legal_moves, mainboard=mainboard)
 
 
-@limiter.limit('60/minute; 3000/hour; 8000/day; 40000/month')
+@limiter.limit('120/minute; 3000/hour; 8000/day; 40000/month')
 @bp.route('/ultimate_tictactoe', methods=['GET'])
 @bp.route('/ultimate_tictactoe', methods=['POST'])
 def game():
@@ -78,6 +80,7 @@ def game():
     if current_node is None:
         print('*** current_node is None ***')
         print('session_id=%d' % session['id'])
+        set_trace()
         return redirect(url_for('hello'))
     state = current_node.state
     form = UltimateTictactoeForm()
@@ -88,6 +91,8 @@ def game():
             m = int(m)
             action = UltimateTicTacToeMove(pos(m), 1)
             current_node = current_node.get_child(action)
+            if current_node is None:
+                set_trace()
             state = current_node.state
             if not state.is_game_over():
                 mcts = MonteCarloTreeSearch(current_node)
