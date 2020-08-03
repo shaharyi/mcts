@@ -7,6 +7,7 @@ from flask_bootstrap import Bootstrap
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+import np_json
 
 # Limit request rate per route. Gives client HTTP 429 when exceeded.
 limiter = Limiter(key_func=get_remote_address,
@@ -16,6 +17,9 @@ limiter = Limiter(key_func=get_remote_address,
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
+
+    # app.json_encoder = np_json.NumpyEncoder
+    # app.json_decoder = np_json.NumpyDecoder
 
     bootstrap = Bootstrap(app)
 

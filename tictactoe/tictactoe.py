@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 import numpy as np
 from common.common import TwoPlayersAbstractGameState, AbstractGameAction
 
 
+@dataclass_json
 @dataclass
 class TicTacToeMove(AbstractGameAction):
     x_coordinate: int
@@ -14,16 +16,18 @@ class TicTacToeMove(AbstractGameAction):
         return s
 
 
+@dataclass_json
+@dataclass
 class TicTacToeGameState(TwoPlayersAbstractGameState):
-
+    board: np.ndarray
     x = 1
     o = -1
 
-    def __init__(self, state, next_to_move=1):
-        if len(state.shape) != 2 or state.shape[0] != state.shape[1]:
+    def __init__(self, board, next_to_move=1):
+        if len(board.shape) != 2 or board.shape[0] != board.shape[1]:
             raise ValueError("Only 2D square boards allowed")
-        self.board = state
-        self.board_size = state.shape[0]
+        self.board = board
+        self.board_size = board.shape[0]
         self.next_to_move = next_to_move
 
     @property

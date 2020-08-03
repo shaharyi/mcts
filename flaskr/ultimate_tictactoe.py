@@ -76,6 +76,8 @@ def game():
     global N, current_nodes, root
     current_node = current_nodes.get(session['id'])
     if current_node is None:
+        print('*** current_node is None ***')
+        print('session_id=%d' % session['id'])
         return redirect(url_for('hello'))
     state = current_node.state
     form = UltimateTictactoeForm()

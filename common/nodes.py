@@ -5,6 +5,10 @@ from abc import ABC, abstractmethod
 
 class MonteCarloTreeSearchNode(ABC):
 
+    state: object
+    parent: object
+    children: list
+
     def __init__(self, state, parent=None):
         """
         Parameters
@@ -70,10 +74,15 @@ class MonteCarloTreeSearchNode(ABC):
 
 class TwoPlayersGameMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
 
+    action: object
+    _number_of_visits: int
+    _results: defaultdict
+    _untried_actions: list
+
     def __init__(self, state, parent=None, action=None):
         super().__init__(state, parent)
         self.action = action
-        self._number_of_visits = 0.
+        self._number_of_visits = 0
         self._results = defaultdict(int)
         self._untried_actions = None
 
