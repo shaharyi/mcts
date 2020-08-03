@@ -80,7 +80,7 @@ def game():
     if current_node is None:
         print('*** current_node is None ***')
         print('session_id=%d' % session['id'])
-        set_trace()
+        # set_trace()
         return redirect(url_for('hello'))
     state = current_node.state
     form = UltimateTictactoeForm()
@@ -91,8 +91,8 @@ def game():
             m = int(m)
             action = UltimateTicTacToeMove(pos(m), 1)
             current_node = current_node.get_child(action)
-            if current_node is None:
-                set_trace()
+            # if current_node is None:
+            #     set_trace()
             state = current_node.state
             if not state.is_game_over():
                 mcts = MonteCarloTreeSearch(current_node)
