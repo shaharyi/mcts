@@ -22,10 +22,9 @@ DATA_DIR = os.path.join(WORKING_DIR, 'static/data')
 TREE_ABS_FILEPATH = os.path.join(DATA_DIR, TREE_FILENAME)
 TREE_REL_FILEPATH = '../../static/data/' + TREE_FILENAME
 
-if not ('current_nodes' in vars() or 'current_nodes' in globals()):
-    current_nodes = {}
-    session_id = 1
-    root = None
+current_nodes = {}
+session_id = 1
+root = None
 
 bp = Blueprint('ultimate_tictactoe', __name__, url_prefix='/ultimate_tictactoe')
 
