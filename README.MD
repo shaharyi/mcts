@@ -32,6 +32,7 @@ mod_wsgi:
   
 Clone the repo from GitHub:
 ```
+cd /var/www
 git clone https://github.com/shaharyi/mcts
 ```
 
@@ -50,9 +51,9 @@ pip install -r requirements.txt
 ## Installing D3-Hypertree
 https://github.com/glouwa/d3-hypertree
 ```
+$ cd /var/www
 $ npm install d3-hypertree --save
-
-$ ln -s ~/node_modules/d3-hypertree/dist flaskr/static/d3-hypertree_dist
+$ ln -s node_modules/d3-hypertree/dist mcts/flaskr/static/d3-hypertree_dist
 ```
 
 ## Launching the Program

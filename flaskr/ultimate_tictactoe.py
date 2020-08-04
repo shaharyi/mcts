@@ -1,5 +1,4 @@
 from pdb import set_trace
-from threading import Lock
 import numpy as np
 import os.path
 
@@ -9,7 +8,9 @@ from common.search import MonteCarloTreeSearch
 from common.common import save_in_thread, load_object_binary, save_object_binary
 from ultimate_tictactoe.state import UltimateTicTacToeMove, UltimateTicTacToeGameState
 
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint, flash, g, redirect, render_template, request, session, url_for
+)
 
 from . import limiter  # flask limiter. Limits request rate
 
@@ -22,6 +23,10 @@ DATA_DIR = os.path.join(WORKING_DIR, 'static/data')
 TREE_ABS_FILEPATH = os.path.join(DATA_DIR, TREE_FILENAME)
 TREE_REL_FILEPATH = '../../static/data/' + TREE_FILENAME
 
+# Global variables work well in deployment only if you set in apache single process.
+# Otherwise they reset sometimes.
+# /etc/apache2/sites-enabled/000-default.conf
+# WSGIDaemonProcess mcts processes=1 threads=16
 current_nodes = {}
 session_id = 1
 root = None
@@ -71,12 +76,12 @@ def game_restart():
 
 
 @limiter.limit('120/minute; 3000/hour; 8000/day; 40000/month')
-@bp.route('/ultimate_tictactoe', methods=['GET'])
 @bp.route('/ultimate_tictactoe', methods=['POST'])
 def game():
     global N, current_nodes, root
     current_node = current_nodes.get(session['id'])
     if current_node is None:
+        flash('Bug caused reset!    Sorry for that.')
         print('*** current_node is None ***')
         print('session_id=%d' % session['id'])
         # set_trace()
@@ -90,8 +95,12 @@ def game():
             m = int(m)
             action = UltimateTicTacToeMove(pos(m), 1)
             current_node = current_node.get_child(action)
-            # if current_node is None:
-            #     set_trace()
+            if current_node is None:
+                flash('Bug caused reset!    Sorry for that.')
+                print('*** current_node is None ***')
+                print('session_id=%d' % session['id'])
+                # set_trace()
+                return redirect(url_for('hello'))
             state = current_node.state
             if not state.is_game_over():
                 mcts = MonteCarloTreeSearch(current_node)

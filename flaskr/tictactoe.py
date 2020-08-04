@@ -9,8 +9,10 @@ from common.common import load_object_binary, save_object_binary, save_object_te
 from tictactoe.tictactoe import TicTacToeGameState, TicTacToeMove
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app
+    Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
+
+from . import limiter  # flask limiter. Limits request rate
 
 bp = Blueprint('tictactoe', __name__, url_prefix='/tictactoe')
 
@@ -21,16 +23,22 @@ DATA_DIR = os.path.join(WORKING_DIR, 'static/data')
 TREE_ABS_FILEPATH = os.path.join(DATA_DIR, TREE_FILENAME)
 TREE_REL_FILEPATH = '../../static/data/' + TREE_FILENAME
 
+# Global variables work well in deployment only if you set in apache single process.
+# Otherwise they reset sometimes.
+# /etc/apache2/sites-enabled/000-default.conf
+# WSGIDaemonProcess mcts processes=1 threads=16
 current_nodes = {}
 session_id = 1
 root = None
 
 
+@limiter.limit('10/minute; 60/hour; 100/day; 1000/month')
 @bp.route('/tictactoe/tree_view', methods=['GET'])
 def tree_view():
     return render_template('tree_view.html', filepath=TREE_REL_FILEPATH + '.d3.json')
 
 
+@limiter.limit('10/minute; 60/hour; 100/day; 1000/month')
 @bp.route('/tictactoe', methods=['GET'])
 def game_restart():
     global N, current_nodes, session_id, root
@@ -57,13 +65,13 @@ def game_restart():
     return render_template('tictactoe.html', form=form, N=N)
 
 
+@limiter.limit('120/minute; 3000/hour; 8000/day; 40000/month')
 @bp.route('/tictactoe', methods=['POST'])
 def game():
     global N, current_nodes, root
     current_node = current_nodes.get(session['id'])
     if current_node is None:
-        print('*** current_node is None ***')
-        print('session_id=%d' % session['id'])
+        flash('Bug caused reset!    Sorry for that.')
         return redirect(url_for('hello'))
     state = current_node.state
     form = TictactoeForm()
