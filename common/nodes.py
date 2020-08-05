@@ -189,7 +189,7 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
         while not current_rollout_state.is_game_over():
             possible_moves = current_rollout_state.get_legal_actions()
             action = self.rollout_policy(possible_moves)
-            actions.add((action.pos, action.value))
+            actions.add(action.data)
             current_rollout_state = current_rollout_state.move(action)
         return current_rollout_state.game_result, actions
 
@@ -198,7 +198,7 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
         self.update_stats(result)
         if self.parent:
             for c in self.parent.children:
-                if (c.action.pos, c.action.value) in rollout_actions:
+                if c.action.data in rollout_actions:
                     result_for_c = result * self.state.next_to_move
                     c._wins_rave += REWARD[result_for_c]
                     c._number_of_visits_rave += 1

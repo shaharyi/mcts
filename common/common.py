@@ -123,4 +123,6 @@ class TwoPlayersAbstractGameState(ABC):
 
 
 class AbstractGameAction(ABC):
-    pass
+    @property
+    def data(self):
+        return tuple(self.__dict__.values())
