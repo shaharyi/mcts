@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pickle
 import threading
 from flask import current_app
-
+from .nodes import MonteCarloRaveNode
 
 def save_in_thread(filepath, obj):
     app = current_app._get_current_object()
@@ -38,6 +38,7 @@ def load_object_binary(filepath):
 
 
 def preorder_json(node, level):
+    """For tree-view"""
     indent = level * 2 * ' '
     s = indent + '{\n'
     indent += 2 * ' '
@@ -46,6 +47,8 @@ def preorder_json(node, level):
     if node.parent:
         s += ',\n'
         value = str(node.w) + ', ' + str(node.n)
+        if isinstance(node, MonteCarloRaveNode):
+            value += ', ' + str(node.w_rave) + ', ' + str(node.n_rave)
         s += indent + '"value": [ ' + value + ' ]'
     if node.children:
         s += ',\n'

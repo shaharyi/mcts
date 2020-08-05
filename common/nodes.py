@@ -1,6 +1,5 @@
 from pdb import set_trace
 import numpy as np
-from collections import defaultdict
 from abc import ABC, abstractmethod
 
 RAVE_C_FACTOR = 1.4
