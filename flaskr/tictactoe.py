@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 
 from flaskr.tictactoe_form import TictactoeForm
-from common.nodes import TwoPlayersGameMonteCarloTreeSearchNode
+from common.nodes import MonteCarloRaveNode
 from common.search import MonteCarloTreeSearch
 from common.common import load_object_binary, save_object_binary, save_object_text
 from tictactoe.tictactoe import TicTacToeGameState, TicTacToeMove
@@ -48,7 +48,7 @@ def game_restart():
     else:
         board = np.zeros((N, N), int)
         state = TicTacToeGameState(board=board, next_to_move=-1)
-        root = TwoPlayersGameMonteCarloTreeSearchNode(state=state)
+        root = MonteCarloRaveNode(state=state)
     current_node = root
     state = current_node.state
 

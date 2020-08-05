@@ -45,7 +45,7 @@ def preorder_json(node, level):
     s += indent + '"name": "' + (node.parent and name or 'Root') + '"'
     if node.parent:
         s += ',\n'
-        value = str(node.q) + ', ' + str(node.n)
+        value = str(node.w) + ', ' + str(node.n)
         s += indent + '"value": [ ' + value + ' ]'
     if node.children:
         s += ',\n'
