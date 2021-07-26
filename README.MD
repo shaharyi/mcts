@@ -25,21 +25,32 @@ mod_wsgi:
  * *On production:*
    * sudo apt install apache2 libapache2-mod-wsgi-py3
    * sudo a2enmod wsgi
-   * sudo vi /etc/apache2/sites-enabled/000-default.conf
-   
-     ```WSGIPassAuthorization ON```
-   * sudo apachectl restart
   
 Clone the repo from GitHub:
 ```
 cd /var/www
 git clone https://github.com/shaharyi/mcts
+sudo chgrp -R www-data /var/www/mcts
+```
+let apache write files like tree.pkl, tree.d3.json:
+```
+sudo chmod g+w /var/www/mcts/flaskr/static/data
+```
+
+Create proper static files:
+```
+sudo cp mcts/flaskr/000-default.conf /etc/apache2/sites-available/
+sudo apachectl restart
+mkdir documents
+cp mcts/flaskr/static/img/favicon.ico documents/
+mkdir wsgi-scripts
+cp mcts/flaskr/app.wsgi wsgi-scripts/
 ```
 
 Create a virtual environment for the project and activate it:
 ```
-cd myprice
-virtualenv -p /usr/bin/python3.6 venv
+cd /var/www/mcts
+virtualenv -p /usr/bin/python3.8 venv
 source venv/bin/activate
 ```
 
@@ -68,6 +79,10 @@ You can now run the app with the following command: `flask run`
 * [Flask](http://flask.pocoo.org/)
 
 ## Credits and License
+
+Based on code by Kamil Czarnogórski, in 2018:  
+https://github.com/int8/monte-carlo-tree-search  
+https://int8.io/monte-carlo-tree-search-beginners-guide
 
 Copyright (c) 2020 [Shahar Yifrah](https://github.com/shaharyi)
 
