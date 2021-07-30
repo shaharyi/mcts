@@ -4,3 +4,5 @@ setuptools~=49.2.0
 WTForms~=2.3.1
 flask_bootstrap
 flask_wtf
+flask_limiter
+dataclasses-json

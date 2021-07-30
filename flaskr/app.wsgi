@@ -1,4 +1,6 @@
-python_home = '/home/ubuntu/mcts/py37-venv'
+# put this file under /var/www/wsgi-scripts
+
+python_home = '/var/www/mcts/py37-venv'
 
 import sys
 import site
@@ -18,7 +20,7 @@ import sys
 import logging
 
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0,"/var/www/html/mcts/")
+sys.path.insert(0,"/var/www/mcts/")
 
 os.environ['FLASK_ENV'] = 'development'
 os.environ['FLASK_APP'] = 'run.py'
