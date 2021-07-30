@@ -1,6 +1,22 @@
 # Installation and Set Up
 Needs to be tested on AWS ubuntu server free-tier instance.
 
+## Install on pythonanywhere.com
+* Create Web App
+* From console, do `git clone ...`
+* To deploy a frozen version of hyperbolic tree view:
+```
+$ cd mcts/flaskr
+$ unzip -of static.zip
+```
+* `pip install -r requirements.txt`
+* Change WSGI to:
+```
+...
+from flaskr import create_app
+application = create_app()
+```
+
 ## Prerequisites:
 [For building Python and mod_wsgi from source:]
 ```
