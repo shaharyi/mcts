@@ -32,10 +32,32 @@ table.win2 {
     line-height:1em;
 }
 
+/* --- LOADING SPINNER OVERLAY STYLES --- */
+#loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 9999;
+    text-align: center;
+    padding-top: 20vh;
+}
+.spinner {
+    font-size: 3rem;
+    font-weight: bold;
+}
 </style>
 {% endblock %}
 
 {% block app_content %}
+<!-- Loading Overlay Element -->
+<div id="loading-overlay">
+    <div class="spinner">⏳ AI is thinking...</div>
+</div>
+
 <h1>{% block title %}Ultimate Tic-Tac-Toe{% endblock %}</h1>
 
 <form class="form form-basic" method="post" role="form">
@@ -79,11 +101,15 @@ table.win2 {
 {{ super() }}
 <script>
 $("div.enabled").click(function(event) {
+    // Show the loading overlay and set cursor
+    $("#loading-overlay").show();
     document.body.style.cursor = 'wait';
+    
+    // Disable further clicks on enabled boxes
+    $("div.enabled").removeClass("enabled");
+
     $("#pressed").val(event.target.id);
     $(".form").submit();
 });
-
-/* document.body.style.cursor = 'default';  */
 </script>
 {% endblock %}
