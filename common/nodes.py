@@ -196,9 +196,11 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
         result, rollout_actions = rollout_output
         self.update_stats(result)
         if self.parent:
+            parent_player = self.parent.state.next_to_move
             for c in self.parent.children:
                 if c.action.data in rollout_actions:
-                    result_for_c = result * self.state.next_to_move
-                    c._wins_rave += REWARD[result_for_c]
+                    result_for_c = result * parent_player
+                    c._wins_rave += REWARD.get(result_for_c, 0.5)
                     c._number_of_visits_rave += 1
             self.parent.backpropagate(rollout_output)
+
