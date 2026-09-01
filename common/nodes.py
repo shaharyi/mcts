@@ -203,4 +203,3 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
                     c._wins_rave += REWARD.get(result_for_c, 0.5)
                     c._number_of_visits_rave += 1
             self.parent.backpropagate(rollout_output)
-
