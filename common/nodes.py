@@ -64,11 +64,29 @@ class MonteCarloTreeSearchNode(ABC):
     def is_fully_expanded(self):
         return len(self.untried_actions) == 0
 
-    def best_child(self, c_param=1.4):
-        choices_weights = [
-            (c.w / c.n) + c_param * np.sqrt((2 * np.log(self.n) / c.n))
-            for c in self.children
-        ]
+    def best_child(self, c_param=RAVE_C_FACTOR):
+        # Your original calc_beta function
+        def calc_beta(c):
+            # Prevents DivisionByZero; if both are 0, return 0
+            if c.n + c.n_rave == 0:
+                return 0
+            return c.n_rave / (c.n + c.n_rave + 4 * RAVE_B_FACTOR ** 2 * c.n * c.n_rave)
+
+        choices_weights = []
+        for c in self.children:
+            beta = calc_beta(c)  # <--- Here is where your beta is calculated!
+
+            if beta != 0:
+                # FIX #3: Notice how c_param is now multiplied by (1 - beta)
+                weight = (1 - beta) * (c.w / c.n) + \
+                         beta * (c.w_rave / c.n_rave) + \
+                         (1 - beta) * c_param * np.sqrt((2 * np.log(self.n) / c.n))
+            else:
+                # If node has no RAVE stats, fallback to pure UCT
+                weight = c.w / c.n + c_param * np.sqrt((2 * np.log(self.n) / c.n))
+
+            choices_weights.append(weight)
+
         return self.children[np.argmax(choices_weights)]
 
     def rollout_policy(self, possible_moves):
@@ -130,24 +148,31 @@ class TwoPlayersGameMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
         return self.state.is_game_over()
 
     def rollout(self):
+        actions_by_player = {1: set(), -1: set()}  # Track actions separately
         current_rollout_state = self.state
+
         while not current_rollout_state.is_game_over():
             possible_moves = current_rollout_state.get_legal_actions()
             action = self.rollout_policy(possible_moves)
-            current_rollout_state = current_rollout_state.move(action)
-        return current_rollout_state.game_result
 
-    def update_stats(self, result):
+            # Add action to the specific player's set
+            actions_by_player[current_rollout_state.next_to_move].add(action.data)
+
+            current_rollout_state = current_rollout_state.move(action)
+
+        return current_rollout_state.game_result, actions_by_player
+
+    def update_stats(self, reward):
         self._number_of_visits += 1.0
         result_for_self = -1  # assume self lost and gets zero reward
         if self.parent:
-            result_for_self = result * self.parent.state.next_to_move
+            result_for_self = reward * self.parent.state.next_to_move
         self._wins += REWARD[result_for_self]
 
-    def backpropagate(self, result):
-        self.update_stats(result)
+    def backpropagate(self, reward):  # MATCHES BASE CLASS
+        self.update_stats(reward)
         if self.parent:
-            self.parent.backpropagate(result)
+            self.parent.backpropagate(reward)
 
 
 class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
@@ -192,14 +217,24 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
             current_rollout_state = current_rollout_state.move(action)
         return current_rollout_state.game_result, actions
 
-    def backpropagate(self, rollout_output):
-        result, rollout_actions = rollout_output
+    def backpropagate(self, reward):  # MATCHES BASE CLASS
+        # Unpack the tuple that was returned by this class's rollout()
+        result, actions_by_player = reward
+
+        # update_stats expects a float, so we pass just the scalar result
         self.update_stats(result)
+
         if self.parent:
             parent_player = self.parent.state.next_to_move
             for c in self.parent.children:
-                if c.action.data in rollout_actions:
+                if c.action.data in actions_by_player[parent_player]:
                     result_for_c = result * parent_player
                     c._wins_rave += REWARD.get(result_for_c, 0.5)
                     c._number_of_visits_rave += 1
-            self.parent.backpropagate(rollout_output)
+
+            # Add THIS node's action to the tracking set before passing it up
+            if self.action is not None:
+                actions_by_player[parent_player].add(self.action.data)
+
+            # Pass the modified reward tuple up to the parent
+            self.parent.backpropagate(reward)
