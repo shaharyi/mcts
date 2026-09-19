@@ -148,19 +148,12 @@ class TwoPlayersGameMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
         return self.state.is_game_over()
 
     def rollout(self):
-        actions_by_player = {1: set(), -1: set()}  # Track actions separately
         current_rollout_state = self.state
-
         while not current_rollout_state.is_game_over():
             possible_moves = current_rollout_state.get_legal_actions()
             action = self.rollout_policy(possible_moves)
-
-            # Add action to the specific player's set
-            actions_by_player[current_rollout_state.next_to_move].add(action.data)
-
             current_rollout_state = current_rollout_state.move(action)
-
-        return current_rollout_state.game_result, actions_by_player
+        return current_rollout_state.game_result
 
     def update_stats(self, reward):
         self._number_of_visits += 1.0
@@ -208,33 +201,40 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
         return self.children[np.argmax(choices_weights)]
 
     def rollout(self):
-        actions = set()
+        # 1. Initialize a dictionary with a set for each player
+        actions_by_player = {1: set(), -1: set()}
+
         current_rollout_state = self.state
         while not current_rollout_state.is_game_over():
             possible_moves = current_rollout_state.get_legal_actions()
             action = self.rollout_policy(possible_moves)
-            actions.add(action.data)
-            current_rollout_state = current_rollout_state.move(action)
-        return current_rollout_state.game_result, actions
 
-    def backpropagate(self, reward):  # MATCHES BASE CLASS
-        # Unpack the tuple that was returned by this class's rollout()
+            # 2. Add the action to the correct player's set
+            actions_by_player[current_rollout_state.next_to_move].add(action.data)
+
+            current_rollout_state = current_rollout_state.move(action)
+
+        # 3. Return the tuple containing the dictionary
+        return current_rollout_state.game_result, actions_by_player
+
+    def backpropagate(self, reward):
+        # 1. Unpack the tuple that rollout() just returned
         result, actions_by_player = reward
 
-        # update_stats expects a float, so we pass just the scalar result
+        # update_stats expects just the numeric result
         self.update_stats(result)
 
         if self.parent:
             parent_player = self.parent.state.next_to_move
             for c in self.parent.children:
-                if c.action.data in actions_by_player[parent_player]:
+                # 2. Look up the actions for the parent_player in the dictionary
+                if c.action and c.action.data in actions_by_player[parent_player]:
                     result_for_c = result * parent_player
                     c._wins_rave += REWARD.get(result_for_c, 0.5)
                     c._number_of_visits_rave += 1
 
-            # Add THIS node's action to the tracking set before passing it up
+            # 3. Add THIS node's action to the tracking dictionary before passing up
             if self.action is not None:
                 actions_by_player[parent_player].add(self.action.data)
 
-            # Pass the modified reward tuple up to the parent
             self.parent.backpropagate(reward)
