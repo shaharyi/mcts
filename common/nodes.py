@@ -64,29 +64,11 @@ class MonteCarloTreeSearchNode(ABC):
     def is_fully_expanded(self):
         return len(self.untried_actions) == 0
 
-    def best_child(self, c_param=RAVE_C_FACTOR):
-        # Your original calc_beta function
-        def calc_beta(c):
-            # Prevents DivisionByZero; if both are 0, return 0
-            if c.n + c.n_rave == 0:
-                return 0
-            return c.n_rave / (c.n + c.n_rave + 4 * RAVE_B_FACTOR ** 2 * c.n * c.n_rave)
-
-        choices_weights = []
-        for c in self.children:
-            beta = calc_beta(c)  # <--- Here is where your beta is calculated!
-
-            if beta != 0:
-                # FIX #3: Notice how c_param is now multiplied by (1 - beta)
-                weight = (1 - beta) * (c.w / c.n) + \
-                         beta * (c.w_rave / c.n_rave) + \
-                         (1 - beta) * c_param * np.sqrt((2 * np.log(self.n) / c.n))
-            else:
-                # If node has no RAVE stats, fallback to pure UCT
-                weight = c.w / c.n + c_param * np.sqrt((2 * np.log(self.n) / c.n))
-
-            choices_weights.append(weight)
-
+    def best_child(self, c_param=1.4):
+        choices_weights = [
+            (c.w / c.n) + c_param * np.sqrt((2 * np.log(self.n) / c.n))
+            for c in self.children
+        ]
         return self.children[np.argmax(choices_weights)]
 
     def rollout_policy(self, possible_moves):
@@ -187,15 +169,20 @@ class MonteCarloRaveNode(TwoPlayersGameMonteCarloTreeSearchNode):
 
     def best_child(self, c_param=RAVE_C_FACTOR):
         def calc_beta(c):
+            # Prevents DivisionByZero; if both are 0, return 0
+            if c.n + c.n_rave == 0:
+                return 0
             return c.n_rave / (c.n + c.n_rave + 4 * RAVE_B_FACTOR ** 2 * c.n * c.n_rave)
 
         choices_weights = []
         for c in self.children:
-            beta = calc_beta(c)
+            beta = calc_beta(c)  # <--- Here is where your beta is calculated!
             if beta != 0:
-                weight = (1 - beta) * (c.w / c.n) + beta * (c.w_rave / c.n_rave) + \
-                         c_param * np.sqrt((2 * np.log(self.n) / c.n))
+                weight = (1 - beta) * (c.w / c.n) + \
+                         beta * (c.w_rave / c.n_rave) + \
+                         (1 - beta) * c_param * np.sqrt((2 * np.log(self.n) / c.n))
             else:
+                # If node has no RAVE stats, fallback to pure UCT
                 weight = c.w / c.n + c_param * np.sqrt((2 * np.log(self.n) / c.n))
             choices_weights.append(weight)
         return self.children[np.argmax(choices_weights)]
