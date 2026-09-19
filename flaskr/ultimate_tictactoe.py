@@ -15,7 +15,12 @@ from flask import (
 from . import limiter  # flask limiter. Limits request rate
 
 N = 3
-NUM_ROLLOUTS = 100
+
+# RAVE is based on the AMAF (All Moves As First) heuristic,
+# which assumes that "if a move is good at the end of the game,
+# it was probably a good move to play earlier."
+USE_RAVE = False  # Toggle this True/False to switch algorithms
+NUM_ROLLOUTS = 100 if USE_RAVE else 2000  # Pure UCT needs more rollouts
 TREE_FILENAME = 'ut_tree'
 
 WORKING_DIR = os.path.dirname(__file__)
@@ -55,10 +60,12 @@ def game_restart():
     if not root:
         board = np.zeros((N, N, N, N), int)
         state = UltimateTicTacToeGameState(board=board, next_to_move=1)
-        root = MonteCarloRaveNode(state=state)
+        if USE_RAVE:
+            root = MonteCarloRaveNode(state=state)
+        else:
+            root = TwoPlayersGameMonteCarloTreeSearchNode(state=state)
     current_node = root
     state = current_node.state
-
     old_id = session.pop('id', None)  # in case a current game exists for this user
     if old_id:
         current_nodes.pop(old_id, None)
