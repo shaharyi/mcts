@@ -20,7 +20,7 @@ N = 3
 # which assumes that "if a move is good at the end of the game,
 # it was probably a good move to play earlier."
 USE_RAVE = False  # Toggle this True/False to switch algorithms
-NUM_ROLLOUTS = 100 if USE_RAVE else 2000  # Pure UCT needs more rollouts
+NUM_ROLLOUTS = 100 if USE_RAVE else 200  # Pure UCT needs more rollouts
 TREE_FILENAME = 'ut_tree'
 
 WORKING_DIR = os.path.dirname(__file__)

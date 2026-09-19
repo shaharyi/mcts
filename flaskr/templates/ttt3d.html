@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>4x4x4 Isometric Tic-Tac-Toe</title>
+    <style>
+        body { 
+            background: #f4f4f9; 
+            font-family: sans-serif; 
+            text-align: center; 
+            overflow: hidden; 
+            margin: 0; 
+            color: #333;
+        }
+
+        /* The 3D Camera / Perspective */
+        .scene {
+            width: 450px; 
+            height: 450px;
+            margin: 120px auto;
+            perspective: 1500px;
+        }
+
+        /* The Rotating Container */
+        .board-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* Base isometric tilt */
+            transform: rotateX(60deg) rotateZ(-45deg);
+            transition: transform 0.1s ease-out;
+        }
+
+        /* USABILITY: Hover Transparencies */
+        .board-container:hover .layer { opacity: 0.2; transition: opacity 0.3s ease; }
+        .board-container .layer:hover { opacity: 1; z-index: 10; transition: opacity 0.1s ease; }
+
+        /* The 4 Grids */
+        .layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.15); 
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+
+        /* USABILITY: Default Spacing */
+        .layer.l0 { transform: translateZ(135px);  transition: transform 0.5s ease; }
+        .layer.l1 { transform: translateZ(45px);   transition: transform 0.5s ease; }
+        .layer.l2 { transform: translateZ(-45px);  transition: transform 0.5s ease; }
+        .layer.l3 { transform: translateZ(-135px); transition: transform 0.5s ease; }
+
+        /* USABILITY: Exploded View (spread further apart on hover) */
+        .scene:hover .layer.l0 { transform: translateZ(250px); }
+        .scene:hover .layer.l1 { transform: translateZ(85px); }
+        .scene:hover .layer.l2 { transform: translateZ(-85px); }
+        .scene:hover .layer.l3 { transform: translateZ(-250px); }
+
+        /* USABILITY: The Clickable Squares (Shrunk to create click-through gaps) */
+        .cell {
+            background: rgba(255, 255, 255, 0.9);
+            width: 80%;
+            height: 80%;
+            margin: 10%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .cell:hover { 
+            background: #eef7ff; 
+            transform: scale(1.05); /* Slight pop effect on hover */
+        }
+
+        /* USABILITY: Counter-rotate the text so pieces stand straight up facing the camera */
+        .cell span { 
+            transform: rotateZ(45deg) rotateX(-60deg); 
+            pointer-events: none; /* Prevents text from blocking clicks */
+        }
+        
+        .player-x { color: #e74c3c; }
+        .player-o { color: #3498db; }
+        
+        /* UI overlay text */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="instructions">
+        <h2>4x4x4 Isometric Tic-Tac-Toe</h2>
+        <p><strong>Move mouse</strong> to tilt camera. <strong>Hover over a layer</strong> to isolate it.</p>
+    </div>
+
+    <div class="scene">
+        <div class="board-container" id="board">
+            
+            <!-- Loop backwards (3, 2, 1, 0) so the Top layer (0) renders last in the DOM. 
+                 This ensures the browser click-detection correctly prioritizes the top layer in 3D space. -->
+            {% for z in [3, 2, 1, 0] %}
+                <div class="layer l{{ z }}">
+                    {% for r in range(4) %}
+                        {% for c in range(4) %}
+                            <div class="cell" onclick="makeMove({{z}}, {{r}}, {{c}})">
+                                <span>
+                                    {% if board[z][r][c] == 1 %} <span class="player-x">X</span>
+                                    {% elif board[z][r][c] == -1 %} <span class="player-o">O</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        
+        // USABILITY: Mouse tracking for dynamic parallax 3D tilt
+        document.addEventListener('mousemove', (e) => {
+            // Calculate distance from center of screen
+            let xAxis = (window.innerWidth / 2 - e.pageX) / 30;
+            let yAxis = (window.innerHeight / 2 - e.pageY) / 30;
+            
+            // Apply slight offset to the base 60deg tilt and -45deg rotation
+            board.style.transform = `rotateX(${60 + yAxis}deg) rotateZ(${-45 + xAxis}deg)`;
+        });
+
+        // Click handler
+        function makeMove(z, r, c) {
+            console.log(`Clicked Layer: ${z}, Row: ${r}, Col: ${c}`);
+            
+            // Temporary alert to prove it works before you connect the backend
+            alert(`You clicked Layer ${z}, Row ${r}, Col ${c}`);
+            
+            // Example of how to send this to your Flask app later:
+            // fetch(`/move`, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ z: z, r: r, c: c })
+            // }).then(() => window.location.reload());
+        }
+    </script>
+</body>
+</html>
