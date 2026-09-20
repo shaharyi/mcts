@@ -7,12 +7,13 @@
 </header>
 
 <nav>
-    <h1>Games</h1>
+    <h1><a href="/">Games</a></h1>
     <ul>
-        <li><a href="{{ url_for('tictactoe.game_restart') }}">Tic-Tac-Toe</a>
-        <li><a href="{{ url_for('tictactoe.tree_view') }}">Tic-Tac-Toe Tree View</a>
-        <li><a href="{{ url_for('ultimate_tictactoe.game_restart') }}">Ultimate Tic-Tac-Toe</a>
-        <li><a href="https://en.wikipedia.org/wiki/Monte_Carlo_tree_search" title="MonteCaro with Rave">Algorithm</a>
+        <li><a href="{{ url_for('tictactoe.game_restart') }}">Tic-Tac-Toe</a></li>
+        <li><a target="_blank" href="https://en.wikipedia.org/wiki/Monte_Carlo_tree_search" title="MonteCaro Algorithm with Rave">(Monte-Carlo)</a></li>
+        <li><a target="_blank" href="{{ url_for('tictactoe.tree_view') }}">Tic-Tac-Toe Tree View</a></li>
+        <li><a href="{{ url_for('ultimate_tictactoe.game_restart') }}">Ultimate Tic-Tac-Toe</a></li>
+        <li><a target="_blank" href="https://en.wikipedia.org/wiki/Minimax" title="Minimax Algorithm">(Minimax)</a></li>
     </ul>
 </nav>
 <body>
