@@ -3,257 +3,408 @@
 
 {% block header %}
 <style>
-        body { 
-            background: #f4f4f9; 
-            font-family: sans-serif; 
-            text-align: center; 
-            overflow: hidden; 
-            margin: 0; 
-            color: #333;
-            user-select: none;
-        }
+    body {
+        background: #eef1f6;
+        font-family: sans-serif;
+        text-align: center;
+        overflow: hidden;
+        margin: 0;
+        color: #333;
+        user-select: none;
+    }
 
-        .scene {
-            /* 1. Smaller, circular hit area so it only triggers when close to the visual cube */
-            width: 200px;
-            height: 200px;
-            margin: 140px auto 0 auto;
-            perspective: 1800px;
-            transform-origin: center;
-            border-radius: 50%;
-            position: relative;
-        }
+    /* FULL SCREEN CLICK LOCK BARRIER */
+    .click-blocker {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 999999;
+        cursor: wait !important;
+        background: rgba(0, 0, 0, 0);
+    }
 
-        /* 2. Invisible expanding safety net to prevent hover flickering */
-        .scene::after {
-            content: "";
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 100%; height: 100%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            z-index: -1;
-        }
+    body.is-processing .click-blocker {
+        display: block;
+    }
 
-        /* 3. Once triggered, the invisible net expands vastly so moving your mouse doesn't drop the state */
-        .scene:hover::after {
-            width: 700px;
-            height: 700px;
-        }
+    body.is-processing,
+    body.is-processing * {
+        cursor: wait !important;
+    }
 
-        .cursor-rotate { cursor: grab; }
-        .cursor-rotating { cursor: grabbing; }
-        .cursor-panning { cursor: move; }
+    .status-bar {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
 
-        .board-container {
-            width: 280px; /* Keep the actual board size identical */
-            height: 280px;
-            position: absolute;
-            top: 50%; left: 50%;
-            margin-top: -140px; /* Center perfectly inside the smaller scene */
-            margin-left: -140px;
-            transform-style: preserve-3d;
-            transform: rotateX(60deg) rotateZ(-45deg);
-            pointer-events: none;
-        }
+    .ai-thinking-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #2c3e50;
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: bold;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
 
-        .layer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            gap: 4px;
-            /* Removed the dark stacking shadow, replaced with a very faint white */
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #555;
-            border-radius: 6px;
-            pointer-events: none;
-            transform-style: preserve-3d;
-        }
+    .spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
 
-        /* Widen the exploded view slightly so the cells physically overlap less on hover */
-        .scene:hover .layer.l0 { transform: translateZ(340px); }
-        .scene:hover .layer.l1 { transform: translateZ(115px); }
-        .scene:hover .layer.l2 { transform: translateZ(-115px); }
-        .scene:hover .layer.l3 { transform: translateZ(-340px); }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 
-        /*
-          Scaled translateZ values proportionally to match the 280px board footprint
-        */
-        .layer.l0 { transform: translateZ(135px); transition: transform 0.5s ease; }
-        .layer.l1 { transform: translateZ(45px);  transition: transform 0.5s ease; }
-        .layer.l2 { transform: translateZ(-45px); transition: transform 0.5s ease; }
-        .layer.l3 { transform: translateZ(-135px); transition: transform 0.5s ease; }
+    .scene {
+        width: 200px;
+        height: 200px;
+        margin: 120px auto 0 auto;
+        perspective: 1800px;
+        transform-origin: center;
+        border-radius: 50%;
+        position: relative;
+    }
 
-        /* Exploded View scaling for the 280px size */
-        .scene:hover .layer.l0 { transform: translateZ(260px); }
-        .scene:hover .layer.l1 { transform: translateZ(85px); }
-        .scene:hover .layer.l2 { transform: translateZ(-85px); }
-        .scene:hover .layer.l3 { transform: translateZ(-260px); }
+    .scene::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        z-index: -1;
+    }
 
-        .cell {
-            /* Glassy gradient gives a 3D structural feel without blocking view */
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.05) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            width: 82%;
-            height: 82%;
-            margin: 9%;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px; /* Bumped up size slightly */
-            font-weight: 900; /* Made the font thicker */
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 0 8px rgba(255,255,255,0.4);
-            transition: background 0.1s ease, box-shadow 0.1s ease;
-            pointer-events: auto;
-        }
-        .cell:hover {
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: inset 0 0 0 3px #2c3e50, 0 4px 10px rgba(0,0,0,0.3);
-        }
+    .scene:hover::after {
+        width: 700px;
+        height: 700px;
+    }
 
-        .cell span {
-            transform: rotateZ(45deg) rotateX(-60deg);
-            pointer-events: none;
-        }
+    .cursor-rotate { cursor: grab; }
+    .cursor-rotating { cursor: grabbing; }
+    .cursor-panning { cursor: move; }
 
-        /* Added black drop-shadows and vibrant glowing colors so marks punch through the transparent layers */
-        .player-x {
-            color: #ff4757;
-            text-shadow: 1px 1px 2px #000, 0 0 8px rgba(255, 71, 87, 0.8);
-        }
-        .player-o {
-            color: #1e90ff;
-            text-shadow: 1px 1px 2px #000, 0 0 8px rgba(30, 144, 255, 0.8);
-        }
+    .board-container {
+        width: 280px;
+        height: 280px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -140px;
+        margin-left: -140px;
+        transform-style: preserve-3d;
+        transform: rotateX(60deg) rotateZ(-45deg);
+        pointer-events: none;
+    }
 
-        .instructions {
-            position: fixed;
-            top: 15px;
-            left: 0;
-            width: 100%;
-            pointer-events: none;
-        }
+    .layer {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid rgba(80, 80, 80, 0.6);
+        border-radius: 6px;
+        pointer-events: none;
+        transform-style: preserve-3d;
+        transition: transform 0.5s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
 
-        @keyframes glitter {
-            0% {
-                text-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700;
-                transform: scale(1) rotateZ(45deg) rotateX(-60deg);
-            }
-            50% {
-                text-shadow: 0 0 15px #ffea00, 0 0 25px #ffea00, 0 0 35px #ffaa00;
-                transform: scale(1.3) rotateZ(45deg) rotateX(-60deg);
-            }
-        }
-        @keyframes golden-pulse {
-            0%, 100% {
-                color: #fff200; /* Pure electric yellow-gold */
-                text-shadow:
-                    -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
-                    -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
-                    0 0 10px #ffe600, 0 0 20px #ffea00;
-                transform: translateZ(12px) rotateZ(45deg) rotateX(-60deg) scale(1);
-            }
-            50% {
-                color: #ffffff; /* Bright flash at the apex of the bounce */
-                text-shadow:
-                    -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
-                    -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
-                    0 0 25px #ffe600, 0 0 40px #ffcc00, 0 0 50px #ffe600;
-                transform: translateZ(28px) rotateZ(45deg) rotateX(-60deg) scale(1.3);
-            }
-        }
+    .layer:has(.cell:hover) {
+        border-color: #3498db;
+        background: rgba(52, 152, 219, 0.18);
+        box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+    }
 
-        .winning-mark {
-            background: none !important;
-            -webkit-background-clip: initial !important;
-            background-clip: initial !important;
-            animation: golden-pulse 0.8s ease-in-out infinite !important;
-            z-index: 20;
-        }
+    .layer.l0 { transform: translateZ(135px); }
+    .layer.l1 { transform: translateZ(45px); }
+    .layer.l2 { transform: translateZ(-45px); }
+    .layer.l3 { transform: translateZ(-135px); }
+
+    .scene:hover .layer.l0 { transform: translateZ(260px); }
+    .scene:hover .layer.l1 { transform: translateZ(85px); }
+    .scene:hover .layer.l2 { transform: translateZ(-85px); }
+    .scene:hover .layer.l3 { transform: translateZ(-260px); }
+
+    body.is-dragging .layer.l0 { transform: translateZ(135px) !important; }
+    body.is-dragging .layer.l1 { transform: translateZ(45px) !important; }
+    body.is-dragging .layer.l2 { transform: translateZ(-45px) !important; }
+    body.is-dragging .layer.l3 { transform: translateZ(-135px) !important; }
+
+    body.is-dragging .scene::after { display: none !important; }
+    body.is-dragging-bg .cell { pointer-events: none !important; }
+
+    .cell {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.08) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        width: 82%;
+        height: 82%;
+        margin: 9%;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 0 8px rgba(255, 255, 255, 0.5);
+        transition: background 0.1s ease, box-shadow 0.1s ease;
+        pointer-events: auto;
+        position: relative;
+        transform-style: preserve-3d;
+    }
+
+    .cell:hover {
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: inset 0 0 0 3px #2c3e50, 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .cell::before {
+        content: "";
+        position: absolute;
+        top: -15%;
+        bottom: -15%;
+        left: -15%;
+        right: -15%;
+        pointer-events: auto;
+    }
+
+    .token-floating {
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        top: 50%;
+        left: 50%;
+        margin-top: -21px;
+        margin-left: -21px;
+        pointer-events: none;
+        transform-style: preserve-3d;
+    }
+
+    .token-shadow-ground {
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        top: 0;
+        left: 0;
+        transform: translateZ(1px) translateX(2px) translateY(2px) scale(0.97);
+        opacity: 0.55;
+        pointer-events: none;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .token-mark-svg {
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        top: 0;
+        left: 0;
+        transform: translateZ(11px);
+        pointer-events: none;
+        transition: transform 0.2s ease;
+    }
+
+    .cell:hover .token-mark-svg { transform: translateZ(15px); }
+    .cell:hover .token-shadow-ground {
+        transform: translateZ(1px) translateX(3px) translateY(3px) scale(0.92);
+        opacity: 0.45;
+    }
+
+    .winning-mark .token-shadow-ground { opacity: 0.65; }
 </style>
-
 {% endblock %}
 
 {% block app_content %}
 
-    <p><strong>Left-Click Drag:</strong> Rotate | <strong>Middle-Click Drag:</strong> Pan | <strong>Mouse Wheel:</strong> Zoom</p>
+<!-- Invisible Full-Screen Barrier to Block All Mouse Interactions During AI Processing -->
+<div id="click-blocker" class="click-blocker"></div>
 
-    <div class="scene" id="scene">
-        <div class="board-container" id="board">
-            {% for z in [3, 2, 1, 0] %}
-                <div class="layer l{{ z }}">
-                    {% for r in range(4) %}
-                        {% for c in range(4) %}
-                            <div class="cell" onclick="makeMove({{z}}, {{r}}, {{c}})">
-                                <span>
-                                    {% if board[z][r][c] == 1 %} <span class="player-x">X</span>
-                                    {% elif board[z][r][c] == 2 %} <span class="player-x winning-mark">X</span>
-                                    {% elif board[z][r][c] == -1 %} <span class="player-o">O</span>
-                                    {% elif board[z][r][c] == -2 %} <span class="player-o winning-mark">O</span>
-                                    {% endif %}
-                                </span>
-                            </div>
-                        {% endfor %}
-                    {% endfor %}
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <defs>
+        <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff6b81"/>
+            <stop offset="100%" stop-color="#ff4757"/>
+        </linearGradient>
+        <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#70a1ff"/>
+            <stop offset="100%" stop-color="#1e90ff"/>
+        </linearGradient>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff176"/>
+            <stop offset="100%" stop-color="#ffd700"/>
+        </linearGradient>
+
+        <filter id="shadowBlur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2"/>
+        </filter>
+        <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+</svg>
+
+<div class="status-bar">
+    <span><strong>Left-Click Drag:</strong> Rotate | <strong>Middle-Click Drag:</strong> Pan | <strong>Mouse Wheel:</strong> Zoom</span>
+    <div id="ai-indicator" class="ai-thinking-badge" style="display: none;">
+        <div class="spinner"></div> AI is thinking...
+    </div>
+</div>
+
+<form id="move-form" class="form form-basic" action="{{ url_for('ttt3d.game') }}" method="post" role="form">
+    {{ form.hidden_tag() }}
+    {{ wtf.form_errors(form, hiddens="only") }}
+    <input type="hidden" name="pressed_z" id="pressed_z">
+    <input type="hidden" name="pressed_r" id="pressed_r">
+    <input type="hidden" name="pressed_c" id="pressed_c">
+</form>
+
+<div class="scene" id="scene">
+    <div class="board-container" id="board">
+        {% for z in [3, 2, 1, 0] %}
+        <div class="layer l{{ z }}">
+            {% for r in range(4) %}
+            {% for c in range(4) %}
+            <div class="cell" data-z="{{ z }}" data-r="{{ r }}" data-c="{{ c }}">
+                {% if board[z][r][c] == 1 %}
+                <!-- FLOATING RED 'X' MARK -->
+                <div class="token-floating">
+                    <svg class="token-shadow-ground" viewBox="0 0 100 100">
+                        <path filter="url(#shadowBlur)" fill="#000000" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
+                    <svg class="token-mark-svg" viewBox="0 0 100 100">
+                        <path fill="url(#redGrad)" stroke="#ffffff" stroke-width="2" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
                 </div>
+                {% elif board[z][r][c] == 2 %}
+                <!-- FLOATING GOLD WINNING 'X' MARK -->
+                <div class="token-floating winning-mark">
+                    <svg class="token-shadow-ground" viewBox="0 0 100 100">
+                        <path filter="url(#shadowBlur)" fill="#b38600" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
+                    <svg class="token-mark-svg" viewBox="0 0 100 100">
+                        <path filter="url(#goldGlow)" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="3" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
+                </div>
+                {% elif board[z][r][c] == -1 %}
+                <!-- FLOATING BLUE 'O' RING MARK -->
+                <div class="token-floating">
+                    <svg class="token-shadow-ground" viewBox="0 0 100 100">
+                        <path filter="url(#shadowBlur)" fill="#000000" fill-rule="evenodd" d="M50 5 A45 45 0 1 0 50 95 A45 45 0 1 0 50 5 Z M50 22 A28 28 0 1 1 50 78 A28 28 0 1 1 50 22 Z"/>
+                    </svg>
+                    <svg class="token-mark-svg" viewBox="0 0 100 100">
+                        <path fill="url(#blueGrad)" stroke="#ffffff" stroke-width="2" fill-rule="evenodd" d="M50 5 A45 45 0 1 0 50 95 A45 45 0 1 0 50 5 Z M50 22 A28 28 0 1 1 50 78 A28 28 0 1 1 50 22 Z"/>
+                    </svg>
+                </div>
+                {% elif board[z][r][c] == -2 %}
+                <!-- FLOATING GOLD WINNING 'O' RING MARK -->
+                <div class="token-floating winning-mark">
+                    <svg class="token-shadow-ground" viewBox="0 0 100 100">
+                        <path filter="url(#shadowBlur)" fill="#b38600" fill-rule="evenodd" d="M50 5 A45 45 0 1 0 50 95 A45 45 0 1 0 50 5 Z M50 22 A28 28 0 1 1 50 78 A28 28 0 1 1 50 22 Z"/>
+                    </svg>
+                    <svg class="token-mark-svg" viewBox="0 0 100 100">
+                        <path filter="url(#goldGlow)" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="3" fill-rule="evenodd" d="M50 5 A45 45 0 1 0 50 95 A45 45 0 1 0 50 5 Z M50 22 A28 28 0 1 1 50 78 A28 28 0 1 1 50 22 Z"/>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
             {% endfor %}
         </div>
+        {% endfor %}
     </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
-    <script>
-        const body = document.body;
-        const scene = document.getElementById('scene');
-        const board = document.getElementById('board');
+<script>
+    var isProcessing = false;
 
-        let isRotating = false;
-        let isPanning = false;
-        let hasDragged = false;
-        let previousMousePosition = { x: 0, y: 0 };
+    window.addEventListener('DOMContentLoaded', function () {
+        var body = document.body;
+        var scene = document.getElementById('scene');
+        var board = document.getElementById('board');
 
-        let rotX = 60;
-        let rotZ = -45;
-        let panX = 0;
-        let panY = 100;
-        let scale = 1.0;
+        var isRotating = false;
+        var isPanning = false;
+        var hasDragged = false;
+
+        var mouseDownTarget = null;
+        var mouseDownPos = { x: 0, y: 0 };
+        var previousMousePosition = { x: 0, y: 0 };
+
+        var rotX = 60;
+        var rotZ = -45;
+        var panX = 0;
+        var panY = 100;
+        var scale = 1.0;
 
         function updateTransform() {
-            scene.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-            board.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg)`;
+            if (scene) {
+                scene.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+            }
+            if (board) {
+                board.style.transform = 'rotateX(' + rotX + 'deg) rotateZ(' + rotZ + 'deg)';
+            }
         }
 
         updateTransform();
 
-        document.addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                isRotating = true;
-                body.className = 'cursor-rotating';
-            } else if (e.button === 1) {
-                isPanning = true;
-                body.className = 'cursor-panning';
-                e.preventDefault();
-            } else {
+        window.addEventListener('mousedown', function (e) {
+            if (isProcessing) return;
+
+            var cell = e.target.closest('.cell');
+            mouseDownTarget = cell;
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            hasDragged = false;
+
+            if (cell) {
+                isRotating = false;
+                isPanning = false;
                 return;
             }
 
-            hasDragged = false;
-            previousMousePosition = { x: e.pageX, y: e.pageY };
+            if (e.button === 0) {
+                isRotating = true;
+                body.classList.add('cursor-rotating', 'is-dragging', 'is-dragging-bg');
+                body.classList.remove('cursor-rotate', 'cursor-panning');
+            } else if (e.button === 1) {
+                isPanning = true;
+                body.classList.add('cursor-panning', 'is-dragging', 'is-dragging-bg');
+                body.classList.remove('cursor-rotate', 'cursor-rotating');
+                e.preventDefault();
+            }
         });
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isRotating && !isPanning) return;
+        window.addEventListener('mousemove', function (e) {
+            if (isProcessing) return;
 
-            let deltaX = e.pageX - previousMousePosition.x;
-            let deltaY = e.pageY - previousMousePosition.y;
+            var deltaX = e.clientX - previousMousePosition.x;
+            var deltaY = e.clientY - previousMousePosition.y;
 
-            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+            if (Math.abs(e.clientX - mouseDownPos.x) > 3 || Math.abs(e.clientY - mouseDownPos.y) > 3) {
                 hasDragged = true;
             }
 
@@ -266,32 +417,81 @@
                 panY += deltaY;
             }
 
-            updateTransform();
-            previousMousePosition = { x: e.pageX, y: e.pageY };
+            if (isRotating || isPanning) {
+                updateTransform();
+            }
+            previousMousePosition = { x: e.clientX, y: e.clientY };
         });
 
-        document.addEventListener('mouseup', () => {
+        window.addEventListener('mouseup', function (e) {
+            if (isProcessing) return;
+
+            var mouseUpCell = e.target.closest('.cell');
+
+            if (mouseDownTarget && mouseDownTarget === mouseUpCell && !hasDragged) {
+                var z = mouseUpCell.getAttribute('data-z');
+                var r = mouseUpCell.getAttribute('data-r');
+                var c = mouseUpCell.getAttribute('data-c');
+
+                if (z !== null && r !== null && c !== null) {
+                    makeMove(parseInt(z, 10), parseInt(r, 10), parseInt(c, 10), mouseUpCell);
+                }
+            }
+
             isRotating = false;
             isPanning = false;
-            body.className = 'cursor-rotate';
+            mouseDownTarget = null;
+            body.classList.add('cursor-rotate');
+            body.classList.remove('cursor-rotating', 'cursor-panning', 'is-dragging', 'is-dragging-bg');
         });
 
-        document.addEventListener('wheel', (e) => {
+        window.addEventListener('wheel', function (e) {
+            if (isProcessing) {
+                e.preventDefault();
+                return;
+            }
             e.preventDefault();
-
-            const zoomSensitivity = 0.0015;
+            var zoomSensitivity = 0.0015;
             scale -= e.deltaY * zoomSensitivity;
-
             scale = Math.max(0.3, Math.min(scale, 3.5));
-
             updateTransform();
         }, { passive: false });
+    });
 
-        function makeMove(z, r, c) {
-            if (hasDragged) return;
+    function makeMove(z, r, c, cellElement) {
+        if (isProcessing) return;
+        if (cellElement && cellElement.querySelector('.token-floating')) return;
 
-            console.log(`Clicked Layer: ${z}, Row: ${r}, Col: ${c}`);
-            alert(`You clicked Layer ${z}, Row ${r}, Col ${c}`);
+        // 1. Instantly lock all input globally
+        isProcessing = true;
+        document.body.classList.add('is-processing');
+
+        // 2. Display AI indicator badge
+        var aiIndicator = document.getElementById('ai-indicator');
+        if (aiIndicator) aiIndicator.style.display = 'inline-flex';
+
+        // 3. Optimistically render player token
+        if (cellElement) {
+            var playerTokenHtml = `
+                <div class="token-floating">
+                    <svg class="token-shadow-ground" viewBox="0 0 100 100">
+                        <path filter="url(#shadowBlur)" fill="#000000" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
+                    <svg class="token-mark-svg" viewBox="0 0 100 100">
+                        <path fill="url(#redGrad)" stroke="#ffffff" stroke-width="2" d="M25 10 L50 35 L75 10 A8 8 0 0 1 90 25 L65 50 L90 75 A8 8 0 0 1 75 90 L50 65 L25 90 A8 8 0 0 1 10 75 L35 50 L10 25 A8 8 0 0 1 25 10 Z"/>
+                    </svg>
+                </div>`;
+            cellElement.insertAdjacentHTML('beforeend', playerTokenHtml);
         }
-    </script>
+
+        // 4. Set hidden values and submit
+        document.getElementById('pressed_z').value = z;
+        document.getElementById('pressed_r').value = r;
+        document.getElementById('pressed_c').value = c;
+
+        setTimeout(function () {
+            document.getElementById('move-form').submit();
+        }, 50);
+    }
+</script>
 {% endblock %}

@@ -1,32 +1,76 @@
-from pdb import set_trace
-import numpy as np
-
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
-)
-
-from . import limiter  # flask limiter. Limits request rate
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flaskr.ultimate_tictactoe_form import UltimateTictactoeForm
+from tictactoe_3d.ttt3d_state import TicTacToe3DGameState, TicTacToe3DMove
+from common.minimax import get_best_action_minimax
 
 bp = Blueprint('ttt3d', __name__, url_prefix='/ttt3d')
 
+current_states = {}
+session_id = 1
 
-@limiter.limit('10/minute; 60/hour; 100/day; 1000/month')
+
 @bp.route('/ttt3d', methods=['GET'])
 def game_restart():
-    # Create a 4x4x4 board (Z, Y, X) -> (layer, row, col)
-    # 0 = empty, 1 = X, -1 = O
-    board = np.zeros((4, 4, 4), dtype=int)
-    
-    # Mock a 4x4x4 diagonal win for X (corner to opposite corner through the center)
-    board[0][0][0] = 2   # Layer 0 (Top), top-left
-    board[1][1][1] = 2   # Layer 1, mid-left
-    board[2][2][2] = 2   # Layer 2, mid-right
-    board[3][3][3] = 2   # Layer 3 (Bottom), bottom-right
-    
-    # Mock some random moves for O
-    board[0][3][0] = -1  
-    board[1][0][3] = -1  
-    board[3][1][2] = -1  
-    
-    return render_template('ttt3d.html', board=board.tolist())
+    global session_id, current_states
 
+    state = TicTacToe3DGameState()
+
+    old_id = session.pop('ttt3d_id', None)
+    if old_id:
+        current_states.pop(old_id, None)
+
+    session['ttt3d_id'] = session_id
+    current_states[session_id] = state
+    session_id += 1
+
+    form = UltimateTictactoeForm()
+    return render_template('ttt3d.html', form=form, board=state.board, game_over=False)
+
+
+@bp.route('/ttt3d', methods=['POST'])
+def game():
+    global current_states
+
+    state_id = session.get('ttt3d_id')
+    state = current_states.get(state_id)
+
+    if state is None:
+        return redirect(url_for('ttt3d.game_restart'))
+
+    form = UltimateTictactoeForm()
+
+    if request.method == 'POST':
+        try:
+            z = int(request.form['pressed_z'])
+            r = int(request.form['pressed_r'])
+            c = int(request.form['pressed_c'])
+
+            # Wrap in TicTacToe3DMove dataclass to match get_legal_actions()
+            user_move = TicTacToe3DMove(z_coordinate=z, r_coordinate=r, c_coordinate=c, value=state.next_to_move)
+
+            if user_move in state.get_legal_actions() and not state.is_game_over():
+                # 1. Execute Human Move
+                state = state.move(user_move)
+
+                # 2. Execute AI Move if game continues
+                if not state.is_game_over():
+                    ai_move = get_best_action_minimax(state, time_limit=2.0)
+                    if ai_move:
+                        state = state.move(ai_move)
+
+                current_states[state_id] = state
+
+        except (KeyError, ValueError):
+            pass
+
+    game_over = state.is_game_over()
+    if game_over:
+        res = state.game_result
+        if res in (1, 2):
+            flash('Player (Red) Wins!')
+        elif res in (-1, -2):
+            flash('AI (Blue) Wins!')
+        else:
+            flash('Draw!')
+
+    return render_template('ttt3d.html', form=form, board=state.board, game_over=game_over)

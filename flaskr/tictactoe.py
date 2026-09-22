@@ -1,4 +1,3 @@
-from pdb import set_trace
 import os.path
 import numpy as np
 

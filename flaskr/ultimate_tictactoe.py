@@ -2,7 +2,7 @@ import numpy as np
 
 from flaskr.ultimate_tictactoe_form import UltimateTictactoeForm
 from ultimate_tictactoe.state import UltimateTicTacToeMove, UltimateTicTacToeGameState
-from common.minimax import get_best_action_minimax  # Import our new algorithm
+from common.minimax import get_best_action_minimax
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
