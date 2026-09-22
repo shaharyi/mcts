@@ -45,8 +45,9 @@ def create_app(test_config=None):
     def hello():
         return render_template('index.html')
 
-    from . import tictactoe, ultimate_tictactoe
+    from . import tictactoe, ultimate_tictactoe, ttt3d
     app.register_blueprint(tictactoe.bp)
     app.register_blueprint(ultimate_tictactoe.bp)
+    app.register_blueprint(ttt3d.bp)
 
     return app

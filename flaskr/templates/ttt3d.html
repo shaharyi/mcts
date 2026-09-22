@@ -1,8 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>4x4x4 Isometric Tic-Tac-Toe</title>
-    <style>
+{% extends 'base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block header %}
+<style>
         body { 
             background: #f4f4f9; 
             font-family: sans-serif; 
@@ -10,32 +10,53 @@
             overflow: hidden; 
             margin: 0; 
             color: #333;
+            user-select: none;
         }
 
-        /* The 3D Camera / Perspective */
         .scene {
-            width: 450px; 
-            height: 450px;
-            margin: 120px auto;
-            perspective: 1500px;
-        }
-
-        /* The Rotating Container */
-        .board-container {
-            width: 100%;
-            height: 100%;
+            /* 1. Smaller, circular hit area so it only triggers when close to the visual cube */
+            width: 200px;
+            height: 200px;
+            margin: 140px auto 0 auto;
+            perspective: 1800px;
+            transform-origin: center;
+            border-radius: 50%;
             position: relative;
-            transform-style: preserve-3d;
-            /* Base isometric tilt */
-            transform: rotateX(60deg) rotateZ(-45deg);
-            transition: transform 0.1s ease-out;
         }
 
-        /* USABILITY: Hover Transparencies */
-        .board-container:hover .layer { opacity: 0.2; transition: opacity 0.3s ease; }
-        .board-container .layer:hover { opacity: 1; z-index: 10; transition: opacity 0.1s ease; }
+        /* 2. Invisible expanding safety net to prevent hover flickering */
+        .scene::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 100%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: -1;
+        }
 
-        /* The 4 Grids */
+        /* 3. Once triggered, the invisible net expands vastly so moving your mouse doesn't drop the state */
+        .scene:hover::after {
+            width: 700px;
+            height: 700px;
+        }
+
+        .cursor-rotate { cursor: grab; }
+        .cursor-rotating { cursor: grabbing; }
+        .cursor-panning { cursor: move; }
+
+        .board-container {
+            width: 280px; /* Keep the actual board size identical */
+            height: 280px;
+            position: absolute;
+            top: 50%; left: 50%;
+            margin-top: -140px; /* Center perfectly inside the smaller scene */
+            margin-left: -140px;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(-45deg);
+            pointer-events: none;
+        }
+
         .layer {
             position: absolute;
             width: 100%;
@@ -44,75 +65,126 @@
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(4, 1fr);
             gap: 4px;
-            background: rgba(0, 0, 0, 0.15); 
-            border: 2px solid #333;
-            border-radius: 4px;
+            /* Removed the dark stacking shadow, replaced with a very faint white */
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #555;
+            border-radius: 6px;
+            pointer-events: none;
+            transform-style: preserve-3d;
         }
 
-        /* USABILITY: Default Spacing */
-        .layer.l0 { transform: translateZ(135px);  transition: transform 0.5s ease; }
-        .layer.l1 { transform: translateZ(45px);   transition: transform 0.5s ease; }
-        .layer.l2 { transform: translateZ(-45px);  transition: transform 0.5s ease; }
+        /* Widen the exploded view slightly so the cells physically overlap less on hover */
+        .scene:hover .layer.l0 { transform: translateZ(340px); }
+        .scene:hover .layer.l1 { transform: translateZ(115px); }
+        .scene:hover .layer.l2 { transform: translateZ(-115px); }
+        .scene:hover .layer.l3 { transform: translateZ(-340px); }
+
+        /*
+          Scaled translateZ values proportionally to match the 280px board footprint
+        */
+        .layer.l0 { transform: translateZ(135px); transition: transform 0.5s ease; }
+        .layer.l1 { transform: translateZ(45px);  transition: transform 0.5s ease; }
+        .layer.l2 { transform: translateZ(-45px); transition: transform 0.5s ease; }
         .layer.l3 { transform: translateZ(-135px); transition: transform 0.5s ease; }
 
-        /* USABILITY: Exploded View (spread further apart on hover) */
-        .scene:hover .layer.l0 { transform: translateZ(250px); }
+        /* Exploded View scaling for the 280px size */
+        .scene:hover .layer.l0 { transform: translateZ(260px); }
         .scene:hover .layer.l1 { transform: translateZ(85px); }
         .scene:hover .layer.l2 { transform: translateZ(-85px); }
-        .scene:hover .layer.l3 { transform: translateZ(-250px); }
+        .scene:hover .layer.l3 { transform: translateZ(-260px); }
 
-        /* USABILITY: The Clickable Squares (Shrunk to create click-through gaps) */
         .cell {
-            background: rgba(255, 255, 255, 0.9);
-            width: 80%;
-            height: 80%;
-            margin: 10%;
-            border-radius: 6px;
+            /* Glassy gradient gives a 3D structural feel without blocking view */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            width: 82%;
+            height: 82%;
+            margin: 9%;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 35px;
-            font-weight: bold;
+            font-size: 26px; /* Bumped up size slightly */
+            font-weight: 900; /* Made the font thicker */
             cursor: pointer;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 0 8px rgba(255,255,255,0.4);
+            transition: background 0.1s ease, box-shadow 0.1s ease;
+            pointer-events: auto;
+        }
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 0 0 3px #2c3e50, 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        .cell:hover { 
-            background: #eef7ff; 
-            transform: scale(1.05); /* Slight pop effect on hover */
+        .cell span {
+            transform: rotateZ(45deg) rotateX(-60deg);
+            pointer-events: none;
         }
 
-        /* USABILITY: Counter-rotate the text so pieces stand straight up facing the camera */
-        .cell span { 
-            transform: rotateZ(45deg) rotateX(-60deg); 
-            pointer-events: none; /* Prevents text from blocking clicks */
+        /* Added black drop-shadows and vibrant glowing colors so marks punch through the transparent layers */
+        .player-x {
+            color: #ff4757;
+            text-shadow: 1px 1px 2px #000, 0 0 8px rgba(255, 71, 87, 0.8);
         }
-        
-        .player-x { color: #e74c3c; }
-        .player-o { color: #3498db; }
-        
-        /* UI overlay text */
+        .player-o {
+            color: #1e90ff;
+            text-shadow: 1px 1px 2px #000, 0 0 8px rgba(30, 144, 255, 0.8);
+        }
+
         .instructions {
             position: fixed;
-            top: 20px;
+            top: 15px;
             left: 0;
             width: 100%;
+            pointer-events: none;
         }
-    </style>
-</head>
-<body>
 
-    <div class="instructions">
-        <h2>4x4x4 Isometric Tic-Tac-Toe</h2>
-        <p><strong>Move mouse</strong> to tilt camera. <strong>Hover over a layer</strong> to isolate it.</p>
-    </div>
+        @keyframes glitter {
+            0% {
+                text-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700;
+                transform: scale(1) rotateZ(45deg) rotateX(-60deg);
+            }
+            50% {
+                text-shadow: 0 0 15px #ffea00, 0 0 25px #ffea00, 0 0 35px #ffaa00;
+                transform: scale(1.3) rotateZ(45deg) rotateX(-60deg);
+            }
+        }
+        @keyframes golden-pulse {
+            0%, 100% {
+                color: #fff200; /* Pure electric yellow-gold */
+                text-shadow:
+                    -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
+                    -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
+                    0 0 10px #ffe600, 0 0 20px #ffea00;
+                transform: translateZ(12px) rotateZ(45deg) rotateX(-60deg) scale(1);
+            }
+            50% {
+                color: #ffffff; /* Bright flash at the apex of the bounce */
+                text-shadow:
+                    -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
+                    -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
+                    0 0 25px #ffe600, 0 0 40px #ffcc00, 0 0 50px #ffe600;
+                transform: translateZ(28px) rotateZ(45deg) rotateX(-60deg) scale(1.3);
+            }
+        }
 
-    <div class="scene">
+        .winning-mark {
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            background-clip: initial !important;
+            animation: golden-pulse 0.8s ease-in-out infinite !important;
+            z-index: 20;
+        }
+</style>
+
+{% endblock %}
+
+{% block app_content %}
+
+    <p><strong>Left-Click Drag:</strong> Rotate | <strong>Middle-Click Drag:</strong> Pan | <strong>Mouse Wheel:</strong> Zoom</p>
+
+    <div class="scene" id="scene">
         <div class="board-container" id="board">
-            
-            <!-- Loop backwards (3, 2, 1, 0) so the Top layer (0) renders last in the DOM. 
-                 This ensures the browser click-detection correctly prioritizes the top layer in 3D space. -->
             {% for z in [3, 2, 1, 0] %}
                 <div class="layer l{{ z }}">
                     {% for r in range(4) %}
@@ -120,7 +192,9 @@
                             <div class="cell" onclick="makeMove({{z}}, {{r}}, {{c}})">
                                 <span>
                                     {% if board[z][r][c] == 1 %} <span class="player-x">X</span>
+                                    {% elif board[z][r][c] == 2 %} <span class="player-x winning-mark">X</span>
                                     {% elif board[z][r][c] == -1 %} <span class="player-o">O</span>
+                                    {% elif board[z][r][c] == -2 %} <span class="player-o winning-mark">O</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -128,37 +202,96 @@
                     {% endfor %}
                 </div>
             {% endfor %}
-
         </div>
     </div>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
     <script>
+        const body = document.body;
+        const scene = document.getElementById('scene');
         const board = document.getElementById('board');
-        
-        // USABILITY: Mouse tracking for dynamic parallax 3D tilt
-        document.addEventListener('mousemove', (e) => {
-            // Calculate distance from center of screen
-            let xAxis = (window.innerWidth / 2 - e.pageX) / 30;
-            let yAxis = (window.innerHeight / 2 - e.pageY) / 30;
-            
-            // Apply slight offset to the base 60deg tilt and -45deg rotation
-            board.style.transform = `rotateX(${60 + yAxis}deg) rotateZ(${-45 + xAxis}deg)`;
+
+        let isRotating = false;
+        let isPanning = false;
+        let hasDragged = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        let rotX = 60;
+        let rotZ = -45;
+        let panX = 0;
+        let panY = 100;
+        let scale = 1.0;
+
+        function updateTransform() {
+            scene.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            board.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg)`;
+        }
+
+        updateTransform();
+
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                isRotating = true;
+                body.className = 'cursor-rotating';
+            } else if (e.button === 1) {
+                isPanning = true;
+                body.className = 'cursor-panning';
+                e.preventDefault();
+            } else {
+                return;
+            }
+
+            hasDragged = false;
+            previousMousePosition = { x: e.pageX, y: e.pageY };
         });
 
-        // Click handler
+        document.addEventListener('mousemove', (e) => {
+            if (!isRotating && !isPanning) return;
+
+            let deltaX = e.pageX - previousMousePosition.x;
+            let deltaY = e.pageY - previousMousePosition.y;
+
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                hasDragged = true;
+            }
+
+            if (isRotating) {
+                rotZ -= deltaX * 0.5;
+                rotX -= deltaY * 0.5;
+                rotX = Math.max(0, Math.min(180, rotX));
+            } else if (isPanning) {
+                panX += deltaX;
+                panY += deltaY;
+            }
+
+            updateTransform();
+            previousMousePosition = { x: e.pageX, y: e.pageY };
+        });
+
+        document.addEventListener('mouseup', () => {
+            isRotating = false;
+            isPanning = false;
+            body.className = 'cursor-rotate';
+        });
+
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            const zoomSensitivity = 0.0015;
+            scale -= e.deltaY * zoomSensitivity;
+
+            scale = Math.max(0.3, Math.min(scale, 3.5));
+
+            updateTransform();
+        }, { passive: false });
+
         function makeMove(z, r, c) {
+            if (hasDragged) return;
+
             console.log(`Clicked Layer: ${z}, Row: ${r}, Col: ${c}`);
-            
-            // Temporary alert to prove it works before you connect the backend
             alert(`You clicked Layer ${z}, Row ${r}, Col ${c}`);
-            
-            // Example of how to send this to your Flask app later:
-            // fetch(`/move`, {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ z: z, r: r, c: c })
-            // }).then(() => window.location.reload());
         }
     </script>
-</body>
-</html>
+{% endblock %}
