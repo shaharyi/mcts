@@ -188,6 +188,12 @@
         pointer-events: auto;
     }
 
+    /* Disable hover and interactions on cells when game is over */
+    body.game-over .cell {
+        pointer-events: none !important;
+        cursor: default !important;
+    }
+
     .token-floating {
         position: absolute;
         width: 42px;
@@ -348,11 +354,18 @@
 {{ super() }}
 <script>
     var isProcessing = false;
+    var isGameOver = false;
 
     window.addEventListener('DOMContentLoaded', function () {
         var body = document.body;
         var scene = document.getElementById('scene');
         var board = document.getElementById('board');
+
+        // Check if game is over (winning marks exist or all 64 cells are full)
+        isGameOver = document.querySelector('.winning-mark') !== null || document.querySelectorAll('.token-floating').length === 64;
+        if (isGameOver) {
+            body.classList.add('game-over');
+        }
 
         var isRotating = false;
         var isPanning = false;
@@ -447,7 +460,7 @@
         });
 
         window.addEventListener('mouseup', function (e) {
-            if (isProcessing) return;
+            if (isProcessing || isGameOver) return;
 
             var mouseUpCell = e.target.closest('.cell');
 
@@ -482,7 +495,7 @@
     });
 
     function makeMove(z, r, c, cellElement) {
-        if (isProcessing) return;
+        if (isProcessing || isGameOver) return;
         if (cellElement && cellElement.querySelector('.token-floating')) return;
 
         isProcessing = true;
