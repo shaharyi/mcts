@@ -1,19 +1,11 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
+{% block title %}Tic-Tac-Toe 3D{% endblock %}
+
 {% block header %}
 <style>
-    body {
-        background: #eef1f6;
-        font-family: sans-serif;
-        text-align: center;
-        overflow: hidden;
-        margin: 0;
-        color: #333;
-        user-select: none;
-    }
-
-    /* FULL SCREEN CLICK LOCK BARRIER */
+    /* Full-screen invisible barrier during AI turn */
     .click-blocker {
         display: none;
         position: fixed;
@@ -35,25 +27,33 @@
         cursor: wait !important;
     }
 
+    /* Left-aligned game status bar */
     .status-bar {
-        margin-top: 10px;
+        margin: 10px 0 20px 0;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 20px;
+        font-size: 0.9em;
+        color: #555;
+        text-align: left;
+    }
+
+    .instructions {
+        line-height: 1.5;
     }
 
     .ai-thinking-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: #2c3e50;
+        background: #377ba8;
         color: #fff;
-        padding: 4px 12px;
+        padding: 6px 14px;
         border-radius: 12px;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
 
     .spinner {
@@ -69,14 +69,16 @@
         to { transform: rotate(360deg); }
     }
 
+    /* 3D Scene container with 360px bottom margin to safely contain exploded layer l3 */
     .scene {
         width: 200px;
         height: 200px;
-        margin: 120px auto 0 auto;
+        margin: 50px auto 360px auto;
         perspective: 1800px;
         transform-origin: center;
         border-radius: 50%;
         position: relative;
+        user-select: none;
     }
 
     .scene::after {
@@ -92,8 +94,8 @@
     }
 
     .scene:hover::after {
-        width: 700px;
-        height: 700px;
+        width: 650px;
+        height: 650px;
     }
 
     .cursor-rotate { cursor: grab; }
@@ -122,7 +124,7 @@
         grid-template-rows: repeat(4, 1fr);
         gap: 4px;
         background: rgba(255, 255, 255, 0.08);
-        border: 2px solid rgba(80, 80, 80, 0.6);
+        border: 2px solid rgba(120, 120, 120, 0.5);
         border-radius: 6px;
         pointer-events: none;
         transform-style: preserve-3d;
@@ -130,9 +132,9 @@
     }
 
     .layer:has(.cell:hover) {
-        border-color: #3498db;
-        background: rgba(52, 152, 219, 0.18);
-        box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+        border-color: #377ba8;
+        background: rgba(55, 123, 168, 0.15);
+        box-shadow: 0 0 15px rgba(55, 123, 168, 0.4);
     }
 
     .layer.l0 { transform: translateZ(135px); }
@@ -154,8 +156,8 @@
     body.is-dragging-bg .cell { pointer-events: none !important; }
 
     .cell {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.08) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.7);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(240, 240, 240, 0.2) 100%);
+        border: 1px solid rgba(200, 200, 200, 0.8);
         width: 82%;
         height: 82%;
         margin: 9%;
@@ -164,7 +166,7 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 0 8px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08), inset 0 0 6px rgba(255, 255, 255, 0.6);
         transition: background 0.1s ease, box-shadow 0.1s ease;
         pointer-events: auto;
         position: relative;
@@ -172,8 +174,8 @@
     }
 
     .cell:hover {
-        background: rgba(255, 255, 255, 0.85);
-        box-shadow: inset 0 0 0 3px #2c3e50, 0 4px 12px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: inset 0 0 0 3px #377ba8, 0 4px 10px rgba(0, 0, 0, 0.2);
     }
 
     .cell::before {
@@ -233,7 +235,7 @@
 
 {% block app_content %}
 
-<!-- Invisible Full-Screen Barrier to Block All Mouse Interactions During AI Processing -->
+<!-- Invisible Full-Screen Barrier to Block Mouse Inputs During AI Thinking -->
 <div id="click-blocker" class="click-blocker"></div>
 
 <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
@@ -264,8 +266,14 @@
     </defs>
 </svg>
 
+<h1>Tic-Tac-Toe 3D</h1>
+
 <div class="status-bar">
-    <span><strong>Left-Click Drag:</strong> Rotate | <strong>Middle-Click Drag:</strong> Pan | <strong>Mouse Wheel:</strong> Zoom</span>
+    <div class="instructions">
+        <strong>Left-Click Drag:</strong> Rotate<br>
+        <strong>Middle-Click Drag:</strong> Pan<br>
+        <strong>Mouse Wheel:</strong> Zoom
+    </div>
     <div id="ai-indicator" class="ai-thinking-badge" style="display: none;">
         <div class="spinner"></div> AI is thinking...
     </div>
@@ -354,11 +362,25 @@
         var mouseDownPos = { x: 0, y: 0 };
         var previousMousePosition = { x: 0, y: 0 };
 
-        var rotX = 60;
-        var rotZ = -45;
-        var panX = 0;
-        var panY = 100;
-        var scale = 1.0;
+        // Restore camera state from sessionStorage across page reloads
+        var savedCamera = sessionStorage.getItem('ttt3d_camera');
+        var camera = savedCamera ? JSON.parse(savedCamera) : { rotX: 60, rotZ: -45, panX: 0, panY: 100, scale: 1.0 };
+
+        var rotX = camera.rotX;
+        var rotZ = camera.rotZ;
+        var panX = camera.panX;
+        var panY = camera.panY;
+        var scale = camera.scale;
+
+        function saveCameraState() {
+            sessionStorage.setItem('ttt3d_camera', JSON.stringify({
+                rotX: rotX,
+                rotZ: rotZ,
+                panX: panX,
+                panY: panY,
+                scale: scale
+            }));
+        }
 
         function updateTransform() {
             if (scene) {
@@ -367,6 +389,7 @@
             if (board) {
                 board.style.transform = 'rotateX(' + rotX + 'deg) rotateZ(' + rotZ + 'deg)';
             }
+            saveCameraState();
         }
 
         updateTransform();
@@ -462,15 +485,12 @@
         if (isProcessing) return;
         if (cellElement && cellElement.querySelector('.token-floating')) return;
 
-        // 1. Instantly lock all input globally
         isProcessing = true;
         document.body.classList.add('is-processing');
 
-        // 2. Display AI indicator badge
         var aiIndicator = document.getElementById('ai-indicator');
         if (aiIndicator) aiIndicator.style.display = 'inline-flex';
 
-        // 3. Optimistically render player token
         if (cellElement) {
             var playerTokenHtml = `
                 <div class="token-floating">
@@ -484,7 +504,6 @@
             cellElement.insertAdjacentHTML('beforeend', playerTokenHtml);
         }
 
-        // 4. Set hidden values and submit
         document.getElementById('pressed_z').value = z;
         document.getElementById('pressed_r').value = r;
         document.getElementById('pressed_c').value = c;
